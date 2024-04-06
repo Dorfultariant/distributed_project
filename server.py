@@ -28,6 +28,9 @@ def initDB():
         for l in f.readlines():
             command += l
         cur.executescript(command)
+        cur.execute('''INSERT INTO User1 VALUES ('0', 'Admin', 'Admin', '1234')''')
+        
+        
         db.commit()
     except FileNotFoundError:
         print(f"'{dbInitFile}' file not found. Abort!")
@@ -39,6 +42,9 @@ def initDB():
         print(e)
         return False
     return True
+
+
+    
 
 
 def main():
