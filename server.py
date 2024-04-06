@@ -1,12 +1,16 @@
 import sqlite3 as sq
+import threading as thread
 from datetime import datetime as dt
 import os
+
 
 dbFile = "main.db"
 dbInitFile = "db_init.sql"
 
+
 db = None
 cur = None
+
 
 def initConnection():
     global db
@@ -45,5 +49,6 @@ def main():
     if not initDB(): return -1
     print ("hello there")
     return
+
 
 main()
