@@ -1,0 +1,1 @@
+INSERT INTO User1 VALUES (0, 'Admin', 'Admin', '1234')

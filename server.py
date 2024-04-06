@@ -6,6 +6,7 @@ import os
 
 dbFile = "main.db"
 dbInitFile = "db_init.sql"
+createData = "createData.sql"
 
 
 db = None
@@ -32,28 +33,51 @@ def initDB():
         for l in f.readlines():
             command += l
         cur.executescript(command)
-        cur.execute('''INSERT INTO User1 VALUES ('0', 'Admin', 'Admin', '1234')''')
-        
-        
         db.commit()
     except FileNotFoundError:
         print(f"'{dbInitFile}' file not found. Abort!")
-        print(f"Include '{dbInitFile}' file in the same folder as databaser.py")
+        print(f"Include '{dbInitFile}' file in the same folder as server.py")
         return False
 
     except sq.Error as e:
         print("Hmm, something went sideways. Abort!")
         print(e)
         return False
+    
+    
     return True
 
+def createAdminUser():
+    
+    try:
+        with open(createData, "r") as f:
+            command = f.read()
+            
+            print("executing admin")   
+            cur.executescript(command)
+            db.commit()
+            print("admin created")
+        
+    except FileNotFoundError:
+        print(f"'{createData}' file not found. Abort!")
+        print(f"Include '{createData}' file in the same folder as server.py")
+        return False
 
+    except sq.Error as e:
+        print("Hmm, something went sideways. Abort!")
+        print(e)
+        return False
+    
+    
+    return True
     
 
 
 def main():
     if not initDB(): return -1
-    print ("hello there")
+    print ("Database created succesfully")
+    createAdminUser()
+    db.close()
     return
 
 
