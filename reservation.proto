@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package reservation;
+
+service ReservationService {
+    rpc PingServer(PingServerRequest) returns (PingServerResponse) {}
+  rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse) {}
+  rpc Login(LoginRequest) returns (LoginResponse) {}
+  rpc Logout(LogoutRequest) returns (LogoutResponse) {}
+  rpc MakeReservation(MakeReservationRequest) returns (MakeReservationResponse) {}
+  rpc ViewReservations(ViewReservationsRequest) returns (ViewReservationsResponse) {}
+  rpc CancelReservation(CancelReservationRequest) returns (CancelReservationResponse) {}
+}
+
+message PingServerRequest {
+    string ping = 1;
+}
+message PingServerResponse {
+    string ping = 1;
+    bool isPinging = 2;
+}
+
+// RPC Method for creating account:
+message CreateAccountRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message CreateAccountResponse {
+  string message = 1;
+  string token = 2;
+}
+// End creating account
+
+
+// RPC login methods
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+message LoginResponse {
+  string message = 1;
+  string token = 3;
+}
+// End of login methods
+
+
+// RPC Logout methods
+message LogoutRequest {
+  string username = 1;
+  string token = 2;
+}
+message LogoutResponse {
+  string message = 1;
+  string token = 2;
+}
+// End of Logout
+
+
+// RPC reservation methods
+message MakeReservationRequest {
+  string username = 1;
+  string room = 2;
+  string timeslot = 3;
+  string token = 4;
+}
+message MakeReservationResponse {
+  string message = 1;
+}
+
+message ViewReservationsRequest {
+  string username = 1;
+  string token = 2;
+}
+
+message ViewReservationsResponse {
+  repeated string reservations = 1;
+}
+
+message CancelReservationRequest {
+  string reservation_id = 1;
+  string token = 2;
+}
+
+message CancelReservationResponse {
+  string message = 1;
+}
+// End of Recervation methods
