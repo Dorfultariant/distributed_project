@@ -67,20 +67,16 @@ def run():
                     print("#### Login ####")
                     while (1):
                         userName = input("Give username: ")
-                        uPass = getpass.getpass("New password: ")
-                        verPass = getpass.getpass("Verify password: ")
-                        if uPass != verPass:
-                            print("Passwords do not match.")
-                            continue
-                        response = stub.CreateAccount(reservation_pb2.CreateAccountRequest(username=userName, password=uPass))
+                        uPass = input("Password: ")
+                        response = stub.Login(reservation_pb2.LoginRequest(username=userName, password=uPass))
 
                         if response == None or response.token == None:
-                            print("Account creation failed.")
+                            print("Account not found")
                             #print(response.message)
-                            continue
-                        metadata.append(("token", response.token))
-                        sessionToken = response.token
-                        print(metadata)
+                        else:
+                            metadata.append(("token", response.token))
+                            sessionToken = response.token
+                            print(metadata)
                         break
 
             userInput = mainMenu()
