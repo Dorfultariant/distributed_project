@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11reservation.proto\x12\x0breservation\"!\n\x11PingServerRequest\x12\x0c\n\x04ping\x18\x01 \x01(\t\"5\n\x12PingServerResponse\x12\x0c\n\x04ping\x18\x01 \x01(\t\x12\x11\n\tisPinging\x18\x02 \x01(\x08\"H\n\x14\x43reateAccountRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x10\n\x08password\x18\x03 \x01(\t\"7\n\x15\x43reateAccountResponse\x12\x0f\n\x07message\x18\x01 \x01(\t\x12\r\n\x05token\x18\x02 \x01(\t\"2\n\x0cLoginRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x10\n\x08password\x18\x02 \x01(\t\"/\n\rLoginResponse\x12\x0f\n\x07message\x18\x01 \x01(\t\x12\r\n\x05token\x18\x03 \x01(\t\"0\n\rLogoutRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\r\n\x05token\x18\x02 \x01(\t\"0\n\x0eLogoutResponse\x12\x0f\n\x07message\x18\x01 \x01(\t\x12\r\n\x05token\x18\x02 \x01(\t\"Y\n\x16MakeReservationRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x0c\n\x04room\x18\x02 \x01(\t\x12\x10\n\x08timeslot\x18\x03 \x01(\t\x12\r\n\x05token\x18\x04 \x01(\t\"*\n\x17MakeReservationResponse\x12\x0f\n\x07message\x18\x01 \x01(\t\":\n\x17ViewReservationsRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\r\n\x05token\x18\x02 \x01(\t\"0\n\x18ViewReservationsResponse\x12\x14\n\x0creservations\x18\x01 \x03(\t\"A\n\x18\x43\x61ncelReservationRequest\x12\x16\n\x0ereservation_id\x18\x01 \x01(\t\x12\r\n\x05token\x18\x02 \x01(\t\",\n\x19\x43\x61ncelReservationResponse\x12\x0f\n\x07message\x18\x01 \x01(\t2\xef\x04\n\x12ReservationService\x12O\n\nPingServer\x12\x1e.reservation.PingServerRequest\x1a\x1f.reservation.PingServerResponse\"\x00\x12X\n\rCreateAccount\x12!.reservation.CreateAccountRequest\x1a\".reservation.CreateAccountResponse\"\x00\x12@\n\x05Login\x12\x19.reservation.LoginRequest\x1a\x1a.reservation.LoginResponse\"\x00\x12\x43\n\x06Logout\x12\x1a.reservation.LogoutRequest\x1a\x1b.reservation.LogoutResponse\"\x00\x12^\n\x0fMakeReservation\x12#.reservation.MakeReservationRequest\x1a$.reservation.MakeReservationResponse\"\x00\x12\x61\n\x10ViewReservations\x12$.reservation.ViewReservationsRequest\x1a%.reservation.ViewReservationsResponse\"\x00\x12\x64\n\x11\x43\x61ncelReservation\x12%.reservation.CancelReservationRequest\x1a&.reservation.CancelReservationResponse\"\x00\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11reservation.proto\x12\x0breservation\"!\n\x11PingServerRequest\x12\x0c\n\x04ping\x18\x01 \x01(\t\"5\n\x12PingServerResponse\x12\x0c\n\x04ping\x18\x01 \x01(\t\x12\x11\n\tisPinging\x18\x02 \x01(\x08\"H\n\x14\x43reateAccountRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x10\n\x08password\x18\x03 \x01(\t\"7\n\x15\x43reateAccountResponse\x12\x0f\n\x07message\x18\x01 \x01(\t\x12\r\n\x05token\x18\x02 \x01(\t\"2\n\x0cLoginRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x10\n\x08password\x18\x02 \x01(\t\"@\n\rLoginResponse\x12\x0f\n\x07message\x18\x01 \x01(\t\x12\x0f\n\x07isValid\x18\x02 \x01(\x08\x12\r\n\x05token\x18\x03 \x01(\t\"0\n\rLogoutRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\r\n\x05token\x18\x02 \x01(\t\"0\n\x0eLogoutResponse\x12\x0f\n\x07message\x18\x01 \x01(\t\x12\r\n\x05token\x18\x02 \x01(\t\"Y\n\x16MakeReservationRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x0c\n\x04room\x18\x02 \x01(\t\x12\x10\n\x08timeslot\x18\x03 \x01(\t\x12\r\n\x05token\x18\x04 \x01(\t\"*\n\x17MakeReservationResponse\x12\x0f\n\x07message\x18\x01 \x01(\t\":\n\x17ViewReservationsRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\r\n\x05token\x18\x02 \x01(\t\"0\n\x18ViewReservationsResponse\x12\x14\n\x0creservations\x18\x01 \x03(\t\"A\n\x18\x43\x61ncelReservationRequest\x12\x16\n\x0ereservation_id\x18\x01 \x01(\t\x12\r\n\x05token\x18\x02 \x01(\t\",\n\x19\x43\x61ncelReservationResponse\x12\x0f\n\x07message\x18\x01 \x01(\t2\xef\x04\n\x12ReservationService\x12O\n\nPingServer\x12\x1e.reservation.PingServerRequest\x1a\x1f.reservation.PingServerResponse\"\x00\x12X\n\rCreateAccount\x12!.reservation.CreateAccountRequest\x1a\".reservation.CreateAccountResponse\"\x00\x12@\n\x05Login\x12\x19.reservation.LoginRequest\x1a\x1a.reservation.LoginResponse\"\x00\x12\x43\n\x06Logout\x12\x1a.reservation.LogoutRequest\x1a\x1b.reservation.LogoutResponse\"\x00\x12^\n\x0fMakeReservation\x12#.reservation.MakeReservationRequest\x1a$.reservation.MakeReservationResponse\"\x00\x12\x61\n\x10ViewReservations\x12$.reservation.ViewReservationsRequest\x1a%.reservation.ViewReservationsResponse\"\x00\x12\x64\n\x11\x43\x61ncelReservation\x12%.reservation.CancelReservationRequest\x1a&.reservation.CancelReservationResponse\"\x00\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,23 +32,23 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['_LOGINREQUEST']._serialized_start=255
   _globals['_LOGINREQUEST']._serialized_end=305
   _globals['_LOGINRESPONSE']._serialized_start=307
-  _globals['_LOGINRESPONSE']._serialized_end=354
-  _globals['_LOGOUTREQUEST']._serialized_start=356
-  _globals['_LOGOUTREQUEST']._serialized_end=404
-  _globals['_LOGOUTRESPONSE']._serialized_start=406
-  _globals['_LOGOUTRESPONSE']._serialized_end=454
-  _globals['_MAKERESERVATIONREQUEST']._serialized_start=456
-  _globals['_MAKERESERVATIONREQUEST']._serialized_end=545
-  _globals['_MAKERESERVATIONRESPONSE']._serialized_start=547
-  _globals['_MAKERESERVATIONRESPONSE']._serialized_end=589
-  _globals['_VIEWRESERVATIONSREQUEST']._serialized_start=591
-  _globals['_VIEWRESERVATIONSREQUEST']._serialized_end=649
-  _globals['_VIEWRESERVATIONSRESPONSE']._serialized_start=651
-  _globals['_VIEWRESERVATIONSRESPONSE']._serialized_end=699
-  _globals['_CANCELRESERVATIONREQUEST']._serialized_start=701
-  _globals['_CANCELRESERVATIONREQUEST']._serialized_end=766
-  _globals['_CANCELRESERVATIONRESPONSE']._serialized_start=768
-  _globals['_CANCELRESERVATIONRESPONSE']._serialized_end=812
-  _globals['_RESERVATIONSERVICE']._serialized_start=815
-  _globals['_RESERVATIONSERVICE']._serialized_end=1438
+  _globals['_LOGINRESPONSE']._serialized_end=371
+  _globals['_LOGOUTREQUEST']._serialized_start=373
+  _globals['_LOGOUTREQUEST']._serialized_end=421
+  _globals['_LOGOUTRESPONSE']._serialized_start=423
+  _globals['_LOGOUTRESPONSE']._serialized_end=471
+  _globals['_MAKERESERVATIONREQUEST']._serialized_start=473
+  _globals['_MAKERESERVATIONREQUEST']._serialized_end=562
+  _globals['_MAKERESERVATIONRESPONSE']._serialized_start=564
+  _globals['_MAKERESERVATIONRESPONSE']._serialized_end=606
+  _globals['_VIEWRESERVATIONSREQUEST']._serialized_start=608
+  _globals['_VIEWRESERVATIONSREQUEST']._serialized_end=666
+  _globals['_VIEWRESERVATIONSRESPONSE']._serialized_start=668
+  _globals['_VIEWRESERVATIONSRESPONSE']._serialized_end=716
+  _globals['_CANCELRESERVATIONREQUEST']._serialized_start=718
+  _globals['_CANCELRESERVATIONREQUEST']._serialized_end=783
+  _globals['_CANCELRESERVATIONRESPONSE']._serialized_start=785
+  _globals['_CANCELRESERVATIONRESPONSE']._serialized_end=829
+  _globals['_RESERVATIONSERVICE']._serialized_start=832
+  _globals['_RESERVATIONSERVICE']._serialized_end=1455
 # @@protoc_insertion_point(module_scope)

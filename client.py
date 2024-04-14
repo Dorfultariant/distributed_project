@@ -45,8 +45,8 @@ def run():
                 if inp == "0": break
 
                 if (inp == "1"):
-                    print("#### Create Account ####")
                     while (1):
+                        print("#### Create Account ####")
                         userName = input("Give username: ")
                         name = input("Give name: ")
                         uPass = getpass.getpass("New password: ")
@@ -58,28 +58,26 @@ def run():
 
                         if response == None or response.token == None:
                             print("Account creation failed.")
-                            #print(response.message)
                             continue
-                        print(response.message)
 
+                        print(response.message)
+                        metadata.append(("token", response.token))
                         sessionToken = response.token
-                        print(metadata)
                         break
 
                 elif (inp == "2"):
-                    print("#### Login ####")
                     while (1):
+                        print("#### Login ####")
                         userName = input("Give username: ")
-                        uPass = input("Password: ")
+                        uPass = getpass.getpass("Password: ")
                         response = stub.Login(reservation_pb2.LoginRequest(username=userName, password=uPass))
-
-                        if response == None or response.token == None:
-                            print("Account not found")
-                            #print(response.message)
+                        if not response.isValid:
+                            print(response.message)
+                            continue
                         else:
+                            print("Succ", response.message)
                             metadata.append(("token", response.token))
                             sessionToken = response.token
-                            print(metadata)
                         break
                 else:
                     continue
@@ -99,7 +97,6 @@ def run():
 
                 response = stub.Logout(reservation_pb2.LogoutRequest(username=userName, token=sessionToken), metadata=metadata)
                 print(response.message)
-                print(response.token)
                 break
 
 
