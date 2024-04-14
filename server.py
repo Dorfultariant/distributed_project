@@ -1,93 +1,87 @@
-# import sqlite3 as sq
-# import threading as thread
-# from datetime import datetime as dt
-# import os
-#
-#
-# dbFile = "main.db"
-# dbInitFile = "db_init.sql"
-#
-#
-# db = None
-# cur = None
-#
-#
-# def initConnection():
-#     global db
-#     global cur
-#     db = sq.connect(dbFile)
-#     cur = db.cursor()
-#     cur.execute("PRAGMA foreign_keys = ON;")
-#     return True
-#
-#
-# def initDB():
-#     if os.path.isfile(dbFile):
-#         initConnection()
-#         return True
-#     initConnection()
-#     try:
-#         f = open(dbInitFile, "r")
-#         command = ""
-#         for l in f.readlines():
-#             command += l
-#         cur.executescript(command)
-#         cur.execute('''INSERT INTO User1 VALUES ('0', 'Admin', 'Admin', '1234')''')
-#
-#
-#         db.commit()
-#     except FileNotFoundError:
-#         print(f"'{dbInitFile}' file not found. Abort!")
-#         print(f"Include '{dbInitFile}' file in the same folder as databaser.py")
-#         return False
-#
-#     except sq.Error as e:
-#         print("Hmm, something went sideways. Abort!")
-#         print(e)
-#         return False
-#     return True
-#
-#
-#
-#
-#
-# def main():
-#     if not initDB(): return -1
-#     print ("hello there")
-#     return
-#
-#
-# main()
-
-
+## THREADING
 from concurrent import futures
+## GRPC tooling
 import grpc
 import reservation_pb2
 import reservation_pb2_grpc
-import jwt
 
+## TOKEN AND AUTHENTICATION
+import jwt
+import hashlib
+
+## DB AND DATE
 import sqlite3 as sq
 import datetime
+import os
+
 
 users = {
     "Seppo": "",
 }
 
-
 loggedUsers = {
 }
 
 
+dbInitFile = "db_init.sql"
+dbFile = "main.db"
+
+
+def initConnection():
+    print("Successful connection")
+    db = sq.connect(dbFile)
+    cur = db.cursor()
+    cur.execute("PRAGMA foreign_keys = ON;")
+    print("Init onnection")
+    return db, cur
+
+
+def initDB():
+    if os.path.isfile(dbFile):
+        print("DB FILE FOUND")
+        db, cur = initConnection()
+        return True
+    db, cur = initConnection()
+    try:
+        print("DB FILE NOT FOUND")
+        f = open(dbInitFile, "r")
+        command = ""
+        for l in f.readlines():
+            command += l
+        cur.executescript(command)
+        cur.execute("""INSERT INTO Member (USERNAME, NAME, PASSWORD, SALT) VALUES ('admin', 'root', 'hashed', 'SALT');""")
+        print("Successful")
+        db.commit()
+
+    except FileNotFoundError:
+        print(f"'{dbInitFile}' file not found. Abort!")
+        print(f"Include '{dbInitFile}' file in the same folder as databaser.py")
+        return False
+
+    except sq.Error as e:
+        print("Hmm, something went sideways. Abort!")
+        print(e)
+        db.rollback()
+        db.close()
+        return False
+    db.close()
+
+    return True
+
+
+
 """
-TODO: CHANGE SECRET
+TODO: CHANGE SECRETS
 """
 
 _SECRET_KEY = "secret auth key"
+_SECRET_SALT_SEED = 59050
 
 
+### NOTE: THIS CLASS IS FOR INTERCEPTING AND VERIFYING USER REQUESTS VIA TOKEN AUTHENTICATION:
 class AuthenticationInterceptor(grpc.ServerInterceptor):
     def __init__(self):
-        self.exclude_methods = ["CreateAccount", "Login", "PingServer"]
+        self._exclude_methods = ["CreateAccount", "Login", "PingServer"]
         def abort(ignored_request, context):
             context.abort(grpc.StatusCode.UNAUTHENTICATED, "Invalid Signature")
         self.abort_handler = grpc.unary_unary_rpc_method_handler(abort)
@@ -99,7 +93,7 @@ class AuthenticationInterceptor(grpc.ServerInterceptor):
         method = handler_call_details.method.split('/')[::-1][0]
         print("Method used: ", method)
 
-        if method in self.exclude_methods:
+        if method in self._exclude_methods:
             return continuation(handler_call_details)
 
         metadata = dict(handler_call_details.invocation_metadata)
@@ -139,52 +133,115 @@ def verify_token(token):
     return False
 
 
+### NOTE: PASSWORD HASHING FOR DATABASE STORAGE
+def hash_passwd(passwd):
+    salt = os.urandom(_SECRET_SALT_SEED)
+
+    key = hashlib.pbkdf2_hmac(
+        'sha256',
+        passwd.encode("utf-8"),
+        salt,
+        100000
+    )
+    return salt, key
+
+
+def verify_passwd(salt, key, passwd):
+    newKey = hashlib.pbkdf2_hmac(
+        "sha256",
+        passwd.encode("utf-8"),
+        salt,
+        100000
+        )
+    print("Key:", key)
+    print("newKey:", newKey)
+    return key == newKey
+
+
 class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer):
 
     def PingServer(self, request, context):
         return reservation_pb2.PingServerResponse(ping="Server reached", isPinging=True)
 
     def CreateAccount(self, request, context):
+        ### FOR EACH USER // REQUEST, A NEW CUR AND DB ARE CREATED TO ACCESS DATABASE
+        db, cur = initConnection()
+
         uName = request.username
-        uPass = request.password
-        print("So far so good")
-        # Add to user "database"
-        users[uName] = uPass
+        name = request.name
+
+        ### CHECKING WHETHER USER ALREADY EXISTS IN DATABASE
+        cmd = "SELECT username FROM Member WHERE username = ?;"
+        cur.execute(cmd, (uName,))
+        if cur.fetchall():
+            return reservation_pb2.CreateAccountResponse(message="User already exists", token=None)
+
+        ### IF NOT THEN WE CAN MOVE ON
         newToken = generate_token(uName)
+        salt, hashPasswd = hash_passwd(request.password)
 
         print()
         print("Generated token: ", newToken)
         print()
 
-        print(users)
-        return reservation_pb2.CreateAccountResponse(message="User created", token=newToken)
+        cmd = "INSERT INTO Member (USERNAME, NAME, PASSWORD, SALT) VALUES (?, ?, ?, ?);"
 
-        if uName in users:
-            return reservation_pb2.CreateAccountResponse(message="Username already exists", token=None)
+        try:
+            cur.execute(cmd, (uName, name, hashPasswd, salt,))
 
-        users[uName] = uPass
-        token = generate_token(uName)
-        print("So far so good 2")
-        return reservation_pb2.CreateAccountResponse(message="User added successfully", token=token)
+            db.commit()
+            db.close()
+
+        except sq.Error as e:
+            print(e)
+            db.rollback()
+            db.close()
+            return reservation_pb2.CreateAccountResponse(message="Could not add user", token=None)
+
+        loggedUsers[uName] = newToken
+        return reservation_pb2.CreateAccountResponse(message="User added successfully", token=newToken)
 
 
     def Login(self, request, context):
         uName = request.username
         uPass = request.password
-
-        if users[uName] != uPass:
+        cmd = "SELECT username, password, salt FROM Member WHERE username = ?;"
+        db, cur = initConnection()
+        info = None
+        try:
+            cur.execute(cmd, (uName,))
+            info = cur.fetchall()
+            db.close()
+        except sq.Error as e:
+            print("User not found:", e)
+            db.close()
             return reservation_pb2.LoginResponse(message="Incorrect credentials", token=None)
-        token = generate_token(uName)
-        return reservation_pb2.LoginResponse(message="Successful Login", token=token)
+
+        if not verify_passwd(info[0][4], info[0][3], uPass):
+            return reservation_pb2.LoginResponse(message="Incorrect credentials", token=None)
+
+        newToken = generate_token(uName)
+        loggedUsers[uName] = newToken
+        return reservation_pb2.LoginResponse(message="Successful Login", token=newToken)
 
 
     def Logout(self, request, context):
         uName = request.username
-        print("Users dict:", users)
-        if not verify_token(request.token) or uName not in users:
-            return reservation_pb2.LogoutResponse(message="Token is invalid...", token=request.token)
+        db, cur = initConnection()
+        cmd = "SELECT username FROM Member WHERE username = ?;"
+        try:
+            cur.execute(cmd, (uName,))
+            if not cur.fetchall():
+                db.close()
+                return reservation_pb2.LogoutResponse(message="User not found from database", token=request.token)
+            if not verify_token(request.token):
+                db.close()
+                return reservation_pb2.LogoutResponse(message="Token is invalid...", token=request.token)
+        except sq.Error as e:
+            print("\nSQLITE error in Logout:\n ", e)
 
-        users.pop(uName)
+        loggedUsers[uName] = None
+
         return reservation_pb2.LogoutResponse(message="Successful Logout", token=None)
 
 
@@ -228,7 +285,8 @@ def serve():
 
 
 if __name__=="__main__":
-    serve()
+    if initDB():
+        serve()
 
 
 
