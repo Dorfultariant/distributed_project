@@ -26,10 +26,11 @@ def run():
 
     with grpc.secure_channel("localhost:44000", channelCredentials) as channel:
         stub = reservation_pb2_grpc.ReservationServiceStub(channel)
-        print(channel)
+        # TEST PING TO SERVER
         response = stub.PingServer(reservation_pb2.PingServerRequest(ping="Gib ping"))
         if response.isPinging:
             print(response.ping)
+
         sessionToken = None
         userName = None
         userInput = "-1"
@@ -47,18 +48,20 @@ def run():
                     print("#### Create Account ####")
                     while (1):
                         userName = input("Give username: ")
+                        name = input("Give name: ")
                         uPass = getpass.getpass("New password: ")
                         verPass = getpass.getpass("Verify password: ")
                         if uPass != verPass:
                             print("Passwords do not match.")
                             continue
-                        response = stub.CreateAccount(reservation_pb2.CreateAccountRequest(username=userName, password=uPass))
+                        response = stub.CreateAccount(reservation_pb2.CreateAccountRequest(username=userName, name=name, password=uPass))
 
                         if response == None or response.token == None:
                             print("Account creation failed.")
                             #print(response.message)
                             continue
-                        metadata.append(("token", response.token))
+                        print(response.message)
+
                         sessionToken = response.token
                         print(metadata)
                         break
@@ -82,6 +85,8 @@ def run():
                         sessionToken = response.token
                         print(metadata)
                         break
+                else:
+                    continue
 
             userInput = mainMenu()
 
@@ -100,12 +105,6 @@ def run():
                 print(response.message)
                 print(response.token)
                 break
-
-
-
-
-
-
 
 
 if __name__=="__main__":
