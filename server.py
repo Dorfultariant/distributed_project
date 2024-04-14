@@ -15,9 +15,6 @@ import datetime
 import os
 
 
-users = {
-    "Seppo": "",
-}
 
 loggedUsers = {
 }
@@ -28,11 +25,9 @@ dbFile = "main.db"
 
 
 def initConnection():
-    print("Successful connection")
     db = sq.connect(dbFile)
     cur = db.cursor()
     cur.execute("PRAGMA foreign_keys = ON;")
-    print("Init onnection")
     return db, cur
 
 
@@ -50,7 +45,6 @@ def initDB():
             command += l
         cur.executescript(command)
         cur.execute("""INSERT INTO Member (USERNAME, NAME, PASSWORD, SALT) VALUES ('admin', 'root', 'hashed', 'SALT');""")
-        print("Successful")
         db.commit()
 
     except FileNotFoundError:
@@ -89,16 +83,12 @@ class AuthenticationInterceptor(grpc.ServerInterceptor):
 
     def intercept_service(self, continuation, handler_call_details):
 
-        print("Handler details: ", handler_call_details)
         method = handler_call_details.method.split('/')[::-1][0]
-        print("Method used: ", method)
 
         if method in self._exclude_methods:
             return continuation(handler_call_details)
 
         metadata = dict(handler_call_details.invocation_metadata)
-        print("Metadata", metadata)
-        # print(metadata["token"])
         if "token" in metadata :
             try:
                 jwt.decode(metadata["token"],_SECRET_KEY, algorithms=["HS256"])
@@ -126,7 +116,6 @@ def verify_token(token):
             key=_SECRET_KEY,
             algorithms=["HS256"],
         )
-        print(payload)
         return True
     except jwt.ExpiredSignatureError as e:
         print(e)
@@ -153,8 +142,6 @@ def verify_passwd(salt, key, passwd):
         salt,
         100000
         )
-    print("Key:", key)
-    print("newKey:", newKey)
     return key == newKey
 
 
@@ -205,24 +192,27 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
     def Login(self, request, context):
         uName = request.username
         uPass = request.password
-        cmd = "SELECT username, password, salt FROM Member WHERE username = ?;"
+
+        cmd = "SELECT * FROM Member WHERE username = ?;"
         db, cur = initConnection()
-        info = None
+        info = []
         try:
             cur.execute(cmd, (uName,))
-            info = cur.fetchall()
+            info = cur.fetchone()
             db.close()
+
         except sq.Error as e:
             print("User not found:", e)
             db.close()
-            return reservation_pb2.LoginResponse(message="Incorrect credentials", token=None)
+            return reservation_pb2.LoginResponse(message="Incorrect credentials", isValid=False, token=None)
 
-        if not verify_passwd(info[0][4], info[0][3], uPass):
-            return reservation_pb2.LoginResponse(message="Incorrect credentials", token=None)
+        if not verify_passwd(info[4], info[3], uPass):
+            print("User password was incorrect")
+            return reservation_pb2.LoginResponse(message="Incorrect credentials", isValid=False, token=None)
 
         newToken = generate_token(uName)
         loggedUsers[uName] = newToken
-        return reservation_pb2.LoginResponse(message="Successful Login", token=newToken)
+        return reservation_pb2.LoginResponse(message="Successful Login", isValid=True, token=newToken)
 
 
     def Logout(self, request, context):
@@ -240,7 +230,7 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
         except sq.Error as e:
             print("\nSQLITE error in Logout:\n ", e)
 
-        loggedUsers[uName] = None
+        loggedUsers.pop(uName)
 
         return reservation_pb2.LogoutResponse(message="Successful Logout", token=None)
 

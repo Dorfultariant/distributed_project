@@ -41,6 +41,7 @@ message LoginRequest {
 }
 message LoginResponse {
   string message = 1;
+  bool isValid = 2;
   string token = 3;
 }
 // End of login methods
