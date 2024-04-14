@@ -101,6 +101,9 @@ def run():
                 print(response.message)
                 print(response.token)
                 break
+            else:
+                print("Unknown selection")
+                continue
 
 
 if __name__=="__main__":
