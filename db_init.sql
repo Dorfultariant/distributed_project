@@ -20,6 +20,8 @@ CREATE TABLE TimeSlot (
     IsAvailable BOOLEAN NOT NULL DEFAULT TRUE,
     FOREIGN KEY (FK_RoomID) REFERENCES Room(RoomID) ON DELETE CASCADE
 );
+-- I was here. Me be soon doing stuff
+
 
 CREATE TABLE Reservation (
     ReservationID INTEGER PRIMARY KEY NOT NULL,
