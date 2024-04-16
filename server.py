@@ -282,12 +282,12 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
             db.close()
 
     def FetchAvailableSlots(self, request, context):
-        ## Test data:
+        
         try:
             db, cur = initConnection()
             room = request.room
             date = request.date
-            cmd = """SELECT * FROM FreeTimeSlots WHERE "Room" = ? AND Date = ?;"""
+            cmd = """SELECT * FROM FreeTimeSlots WHERE "Available" = True AND "Room" = ? AND Date = ?;"""
             cur.execute(cmd, (room,date,))
             dat = cur.fetchall()
             startTime = [ r[3] for r in dat ]
@@ -296,7 +296,7 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
             db.close()
         except Exception as e:
             print("Error while fetching available slots")
-        
+
 
     def MakeReservation(self, request, context):
         try:

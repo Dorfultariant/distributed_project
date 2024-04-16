@@ -22,21 +22,32 @@ def mainMenu():
 
 def makeResMenu():
     print("")
-def printAvailableReservationInfo(stub, token, metadata):
+
+def printAvailableReservationInfo(stub, username, token, metadata):
     try: 
         responses = stub.FetchRooms(reservation_pb2.FetchRoomsRequest(token=token), metadata=metadata)
     except grpc.RpcError as e:
         
         print("gRPC error:", e.code(), e.details())
-        
+    i = 1
+    roomList = []
+    print("Available rooms:")
     for res in responses:
-        print(res.rooms)
-
-    room = input("Room to reserve: ")
+        print(f"[{i}] {res.rooms}")
+        roomList.append(res.rooms)
+        i+=1
+    room = input("Reserver room by number (ex. 2): ")
     date = input("Choose date (YYYY-MM-DD): ")
-    if len(room) < 1:
-        print("Must give room, exiting...")
-        return
+    try:
+        room = int(room)
+    except ValueError:
+        print("Wrong room number")
+        return False
+    room -= 1
+
+    if room > len(roomList):
+        print("Incorrect number")
+        return False
 
     if len(date) < 1:
         print("Must give date, exiting...")
@@ -47,22 +58,20 @@ def printAvailableReservationInfo(stub, token, metadata):
         print("Incorrect date format, should be YYYY-MM-DD", e)
         return False
 
-    
+    selectedRoom = roomList[room][0]
+
     try:
-        responses = stub.FetchAvailableSlots(reservation_pb2.FetchAvailableSlotsRequest(room=room, date=date, token=token), metadata=metadata)
+        responses = stub.FetchAvailableSlots(reservation_pb2.FetchAvailableSlotsRequest(room=selectedRoom, date=date, token=token), metadata=metadata)
     
     except grpc.RpcError as e:
         print("gRPC error when fetching available slots:", e.code(), e.details())
         
     if responses == None:
-        print("Responses is  None")
-    if  responses.token == None:
-        print("responses.token is None")
+        print("Responses is None")
     
     i = 1
     freeList = []
     print("### Free Slots ###")
-#    print("Fetching available slots")
         
     for res in responses:
         for c in res.slots:
@@ -87,15 +96,16 @@ def printAvailableReservationInfo(stub, token, metadata):
     time = str(freeList[int(slot)])
     print("Selected 1 hour timeslot:", time)
 
-    response = stub.MakeReservation(reservation_pb2.MakeReservationRequest(username=username, room=room, date=date, timeslot=time, token=token), metadata=metadata)
+    response = stub.MakeReservation(reservation_pb2.MakeReservationRequest(username=username, room=selectedRoom, date=date, timeslot=time, token=token), metadata=metadata)
 
     if not response.isSuccessful:
         print(response.message)
         ### TODO: ALLOW USER TO TRY TO SELECT NEW SLOT
+        return False
     print(response.message)
 
     print("Receipt:")
-    print(f"Reserved {room} for 1 Hour \non {date} at {time} o'clock.")
+    print(f"Reserved {selectedRoom} for 1 Hour \non {date} at {time} o'clock.")
     return True
 
 # // RPC reservation methods
@@ -174,7 +184,7 @@ def run():
                             print("Account creation failed, response.token is None")
 
                         print("Response.message: ",response.message)
-                        metadata.append(("response.token: ", response.token))
+                        metadata.append(("token", response.token))
                         sessionToken = response.token
                         break
 
