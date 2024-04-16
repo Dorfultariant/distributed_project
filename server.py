@@ -114,8 +114,10 @@ def generate_token(username):
         "username": username,
         "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1)
     }
-
-    token = jwt.encode(pl, _SECRET_KEY, algorithm="HS256")
+    try:
+        token = jwt.encode(pl, _SECRET_KEY, algorithm="HS256")
+    except jwt.DecodeError as e:
+        print("Error while encoding jwt: ",e)
     return token
 
 
@@ -134,24 +136,31 @@ def verify_token(token):
 
 ### NOTE: PASSWORD HASHING FOR DATABASE STORAGE
 def hash_passwd(passwd):
-    salt = os.urandom(_SECRET_SALT_SEED)
-
-    key = hashlib.pbkdf2_hmac(
+    try:
+        salt = os.urandom(_SECRET_SALT_SEED)
+    
+        key = hashlib.pbkdf2_hmac(
         'sha256',
         passwd.encode("utf-8"),
         salt,
         100000
     )
+    except Exception as e:
+        print("error while hashing or salting key: ",e)
+        
     return salt, key
 
 
 def verify_passwd(salt, key, passwd):
-    newKey = hashlib.pbkdf2_hmac(
-        "sha256",
-        passwd.encode("utf-8"),
-        salt,
-        100000
+    try:
+        newKey = hashlib.pbkdf2_hmac(
+            "sha256",
+            passwd.encode("utf-8"),
+            salt,
+            100000
         )
+    except Exception as e:
+        print("Error while generating new key:", e)
     return key == newKey
 
 
@@ -174,9 +183,16 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
             return reservation_pb2.CreateAccountResponse(message="User already exists", token=None)
 
         ### IF NOT THEN WE CAN MOVE ON
-        newToken = generate_token(uName)
-        salt, hashPasswd = hash_passwd(request.password)
-
+        try:
+            newToken = generate_token(uName)
+        except Exception as e:
+            print("Error while generating new token")  
+            
+        try:  
+            salt, hashPasswd = hash_passwd(request.password)
+        except Exception as e:
+            print("Error while generating new salt and hassPasswd")
+            
         print()
         print("Generated token: ", newToken)
         print()
@@ -190,7 +206,7 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
             db.close()
 
         except sq.Error as e:
-            print(e)
+            print("Error while inserting data to Member",e)
             db.rollback()
             db.close()
             return reservation_pb2.CreateAccountResponse(message="Could not add user", token=None)
@@ -259,36 +275,38 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
                 yield reservation_pb2.FetchRoomsResponse(rooms=room)
 
         except sq.Error as e:
-            print(e)
+            print("Errow while fetching rooms",e)
             db.close()
             return reservation_pb2.FetchRoomsResponse(rooms=None)
         finally:
             db.close()
 
     def FetchAvailableSlots(self, request, context):
-        ## Test data:
-        db, cur = initConnection()
-        room = request.room
-        date = request.date
-        cmd = """SELECT * FROM FreeTimeSlots WHERE "Available" = True AND "Room" = ? AND Date = ?;"""
-        cur.execute(cmd, (room,date,))
-
-        dat = cur.fetchall()
-        startTime = [ r[3] for r in dat ]
-        msg = f"Available slots for {date}"
-
-        yield reservation_pb2.FetchAvailableSlotsResponse(message=msg, slots=startTime)
-
-        db.close()
+        
+        try:
+            db, cur = initConnection()
+            room = request.room
+            date = request.date
+            cmd = """SELECT * FROM FreeTimeSlots WHERE "Available" = True AND "Room" = ? AND Date = ?;"""
+            cur.execute(cmd, (room,date,))
+            dat = cur.fetchall()
+            startTime = [ r[3] for r in dat ]
+            msg = f"Available slots for {date}"
+            yield reservation_pb2.FetchAvailableSlotsResponse(message=msg, slots=startTime)
+            db.close()
+        except Exception as e:
+            print("Error while fetching available slots")
 
 
     def MakeReservation(self, request, context):
-        uname = request.username
-        room = request.room
-        timeslot = request.timeslot
+        try:
+            uname = request.username
+            room = request.room
+            timeslot = request.timeslot    
+        except Exception as e:
+            print("Error while getting data from request: ", e)
+            print("User:",uname, " Room:", room, " Time:",timeslot)
         print("User:",uname, " Room:", room, " Time:",timeslot)
-
-        cmd = "SELECT "
 
         return reservation_pb2.MakeReservationResponse(message="Successful reservation", isSuccessful=True)
 
