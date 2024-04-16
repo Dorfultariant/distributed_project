@@ -23,6 +23,7 @@ dbInitFile = "db_init.sql"
 dbFile = "main.db"
 
 
+
 def initConnection():
     db = sq.connect(dbFile)
     cur = db.cursor()
@@ -312,8 +313,35 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
 
 
     def ViewReservations(self, request, context):
+        uname = request.username
 
-        return reservation_pb2.ViewReservationsResponse(reservations="List of your reservations:")
+        if '-' in uname:
+            uname.replace('-','')
+
+        db, cur = initConnection()
+        cmd = "SELECT UserID FROM Member WHERE UserName = ?;"
+        cur.execute(cmd, (uname,))
+        uid = cur.fetchone()
+        if uid == None:
+            print("No user found in ViewReservations...")
+            return reservation_pb2.ViewReservationsResponse(message="No user found")
+
+        uid = int(uid[0])
+
+        cmd = """SELECT * FROM UserReservations WHERE "UID" = ?;""" #WHERE 'UID' = ?
+        cur.execute(cmd, (uid,))
+        ress = cur.fetchall()
+
+        ret = ""
+
+        ## We want to select specific columns from the query:
+        for res in ress:
+            ret += f"{res[1]};"
+            ret += f"{res[3]};"
+            ret += f"{res[4]};"
+            ret += f"{res[5]}\n"
+
+        return reservation_pb2.ViewReservationsResponse(reservations=ret)
 
 
     def CancelReservation(self, request, context):

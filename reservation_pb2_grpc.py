@@ -49,7 +49,7 @@ class ReservationServiceStub(object):
                 request_serializer=reservation__pb2.MakeReservationRequest.SerializeToString,
                 response_deserializer=reservation__pb2.MakeReservationResponse.FromString,
                 )
-        self.ViewReservations = channel.unary_stream(
+        self.ViewReservations = channel.unary_unary(
                 '/reservation.ReservationService/ViewReservations',
                 request_serializer=reservation__pb2.ViewReservationsRequest.SerializeToString,
                 response_deserializer=reservation__pb2.ViewReservationsResponse.FromString,
@@ -156,7 +156,7 @@ def add_ReservationServiceServicer_to_server(servicer, server):
                     request_deserializer=reservation__pb2.MakeReservationRequest.FromString,
                     response_serializer=reservation__pb2.MakeReservationResponse.SerializeToString,
             ),
-            'ViewReservations': grpc.unary_stream_rpc_method_handler(
+            'ViewReservations': grpc.unary_unary_rpc_method_handler(
                     servicer.ViewReservations,
                     request_deserializer=reservation__pb2.ViewReservationsRequest.FromString,
                     response_serializer=reservation__pb2.ViewReservationsResponse.SerializeToString,
@@ -306,7 +306,7 @@ class ReservationService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_stream(request, target, '/reservation.ReservationService/ViewReservations',
+        return grpc.experimental.unary_unary(request, target, '/reservation.ReservationService/ViewReservations',
             reservation__pb2.ViewReservationsRequest.SerializeToString,
             reservation__pb2.ViewReservationsResponse.FromString,
             options, channel_credentials,

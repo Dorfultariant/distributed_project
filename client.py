@@ -7,6 +7,7 @@ import getpass
 
 def loginMenu():
     print()
+    print("###### WELCOME ######")
     print("[1] Create Account")
     print("[2] Login to Existing")
     print("[0] Exit")
@@ -14,14 +15,39 @@ def loginMenu():
 
 def mainMenu():
     print()
+    print("######## MENU ########")
     print("[1] Make reservation")
     print("[2] Cancel reservation")
     print("[3] View reservation")
     print("[0] Logout")
     return input("Option: ")
 
-def makeResMenu():
-    print("")
+def checkReservations(stub, userName, token, metadata):
+
+    try:
+        responses = stub.ViewReservations(reservation_pb2.ViewReservationsRequest(username=userName, token=token), metadata=metadata)
+
+    except grpc.RpcError as e:
+        print("Could not fetch data: ", e)
+        return False
+
+    resList = responses.reservations.split("\n")
+    resList.remove('')
+
+    if not resList:
+        print("No reservations found")
+        return False
+
+    print("\nFound reservations:")
+    for r in resList:
+        n, r, d, t = r.split(';')
+        print(f"Name: {n}")
+        print(f"Room: {r}")
+        print(f"Date: {d}")
+        print(f"Time: {t}")
+        print()
+
+    return True
 
 def printAvailableReservationInfo(stub, username, token, metadata):
     try: 
@@ -108,13 +134,7 @@ def printAvailableReservationInfo(stub, username, token, metadata):
     print(f"Reserved {selectedRoom} for 1 Hour \non {date} at {time} o'clock.")
     return True
 
-# // RPC reservation methods
-# message MakeReservationRequest {
-#   string username = 1;
-#   string room = 2;
-#   string timeslot = 3;
-#   string token = 4;
-# }
+
 
 def run():
     rootCertificates = open("ca.pem", "rb").read()
@@ -222,7 +242,7 @@ def run():
                 pass
 
             elif (userInput == "3"):
-                pass
+                checkReservations(stub, userName, sessionToken, metadata)
 
             elif (userInput == "0"):
                 try:
@@ -230,8 +250,6 @@ def run():
                     print(response.message)
                 except grpc.RpcError as e:
                     print("Grpc Error when logging out:", e.code(), e.details())
-                    
-                
                 break
             else:
                 print("Unknown selection")

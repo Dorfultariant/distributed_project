@@ -13,7 +13,7 @@ service ReservationService {
   rpc FetchAvailableSlots(FetchAvailableSlotsRequest) returns (stream FetchAvailableSlotsResponse) {}
   rpc MakeReservation(MakeReservationRequest) returns (MakeReservationResponse) {}
 
-  rpc ViewReservations(ViewReservationsRequest) returns (stream ViewReservationsResponse) {}
+  rpc ViewReservations(ViewReservationsRequest) returns (ViewReservationsResponse) {}
   rpc CancelReservation(CancelReservationRequest) returns (CancelReservationResponse) {}
 }
 
@@ -101,7 +101,7 @@ message ViewReservationsRequest {
 }
 
 message ViewReservationsResponse {
-  repeated string reservations = 1;
+  string reservations = 1;
 }
 
 message CancelReservationRequest {

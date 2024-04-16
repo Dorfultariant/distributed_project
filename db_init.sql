@@ -17,7 +17,7 @@ INSERT INTO Room (RoomID, Name)
 VALUES (1, 'Da Gaming Lounge'),
        (2, 'Random example Room');
 
-INSERT INTO Room VALUES (3, "IPH");
+-- INSERT INTO Room VALUES (3, "IPH");
 
 CREATE TABLE TimeSlot (
     TimeSlotID INTEGER PRIMARY KEY NOT NULL,
@@ -58,7 +58,7 @@ VALUES (17, 1, '2024-04-17', '08:00:00', TRUE),
        (21, 1, '2024-04-17', '12:00:00', TRUE),
        (22, 1, '2024-04-17', '13:00:00', TRUE),
        (23, 1, '2024-04-17', '14:00:00', TRUE),
-       (24, 1, '2024-04-17', '15:00:00', TRUE);
+       (24, 1, '2024-04-17', '1username5:00:00', TRUE);
 -- Thursday here... 
 INSERT INTO TimeSlot (TimeSlotID, FK_RoomID, Date, StartTime, IsAvailable)
 VALUES (25, 1, '2024-04-18', '08:00:00', TRUE),
@@ -116,7 +116,6 @@ INSERT INTO Reservation (ReservationID, ReservationDate, FK_TimeSlotID, FK_RoomI
 VALUES (1, '2024-04-16', 2, 1, 1),
        (2, '2024-04-16', 4, 1, 1);
        
-
 CREATE VIEW FreeTimeSlots AS
     SELECT r.RoomID AS "Room ID",
         r.Name AS "Room",
@@ -127,4 +126,22 @@ CREATE VIEW FreeTimeSlots AS
     JOIN TimeSlot ts ON ts.FK_RoomID = r.RoomID
     --GROUP BY r.RoomID, r.Name, ts.StartTime, ts.EndTime
     ORDER BY ts.StartTime;
+
+CREATE VIEW UserReservations AS
+    SELECT
+        u.UserID AS "UID",
+        u.UserName AS "Name",
+        r.RoomID AS "Room ID",
+        r.Name AS "Room",
+        ts.Date AS "Date",
+        ts.StartTime AS "Start Time"
+FROM Member u
+    JOIN TimeSlot ts    ON rs.FK_TimeSlotID = ts.TimeSlotID
+    JOIN Room r         ON rs.FK_RoomID     = r.RoomID
+    JOIN Reservation rs ON rs.FK_UserID     = u.UserID
+    --GROUP BY r.RoomID, r.Name, ts.StartTime, ts.EndTime
+    ORDER BY ts.Date;
+
+
+
 
