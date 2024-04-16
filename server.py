@@ -196,11 +196,16 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
 
 
     def Login(self, request, context):
+
+
         uName = request.username
         uPass = request.password
 
         cmd = "SELECT * FROM Member WHERE username = ?;"
         db, cur = initConnection()
+        cmd = """SELECT * FROM FreeTimeSlots;"""
+        cur.execute(cmd)
+        print(cur.fetchone())
         info = []
         try:
             cur.execute(cmd, (uName,))
@@ -240,6 +245,21 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
 
         return reservation_pb2.LogoutResponse(message="Successful Logout", token=None)
 
+    def FetchAvailableSlots(self, request, context):
+        ## Test data:
+        if not verify_token(request.token):
+            return reservation_pb2.FetchAvailableSlotsResponse(message="Token error", slots=None)
+        db, cur = initConnection()
+        room = request.room
+        date = request.date
+        cmd = """SELECT * FROM FreeTimeSlots WHERE "Room ID" = ?;"""
+        cur.execute(cmd, (room,))
+        print(cur.fetchone())
+
+        dat = ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00"]
+
+
+        return reservation_pb2.FetchAvailableSlotsResponse(message="Available slots found", slots=dat)
 
     def MakeReservation(self, request, context):
 

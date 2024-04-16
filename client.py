@@ -98,6 +98,7 @@ def run():
             userInput = mainMenu()
 
             if (userInput == "1"):
+                stub.FetchAvailableSlots(reservation_pb2.FetchAvailableSlotsRequest)
                 pass
 
             elif (userInput == "2"):
