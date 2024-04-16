@@ -43,6 +43,11 @@ def initDB():
         for l in f.readlines():
             command += l
         cur.executescript(command)
+        x=7
+        for i in range(1,8):
+            x=x+1
+            cur.execute("INSERT INTO Room1 (Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday) VALUES (?, ?, ?, ?, ?, ?, ?);", (x, x, x, x, x, x, x))
+        
 
         db.commit()
 
@@ -273,6 +278,9 @@ def serve():
     print("Server rev up on: "+  str(port))
     server.start()
     server.wait_for_termination()
+    
+    
+
 
 
 if __name__=="__main__":
