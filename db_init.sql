@@ -121,7 +121,8 @@ CREATE VIEW FreeTimeSlots AS
     SELECT r.RoomID AS "Room ID",
         r.Name AS "Room",
         ts.Date AS "Date",
-        ts.StartTime AS "Start Time"
+        ts.StartTime AS "Start Time",
+        ts.IsAvailable AS "Available"
     FROM Room r
     JOIN TimeSlot ts ON ts.FK_RoomID = r.RoomID
     --GROUP BY r.RoomID, r.Name, ts.StartTime, ts.EndTime

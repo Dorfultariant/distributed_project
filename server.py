@@ -270,7 +270,7 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
         db, cur = initConnection()
         room = request.room
         date = request.date
-        cmd = """SELECT * FROM FreeTimeSlots WHERE "Room" = ? AND Date = ?;"""
+        cmd = """SELECT * FROM FreeTimeSlots WHERE "Available" = True AND "Room" = ? AND Date = ?;"""
         cur.execute(cmd, (room,date,))
 
         dat = cur.fetchall()
