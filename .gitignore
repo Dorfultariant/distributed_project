@@ -1,2 +1,4 @@
 main.db
 __pycache__/
+__pycache__/reservation_pb2_grpc.cpython-311.pyc
+__pycache__/reservation_pb2.cpython-311.pyc

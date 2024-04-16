@@ -11,6 +11,10 @@ CREATE TABLE Room (
     RoomID INTEGER PRIMARY KEY NOT NULL,
     Name CHAR(100) NOT NULL
 );
+-- Inserting rooms here
+INSERT INTO Room (RoomID, Name)
+VALUES (1, 'Gaming Lounge'),
+       (2, 'Random example Room');
 
 INSERT INTO Room VALUES (1, "IPH");
 
@@ -22,6 +26,20 @@ CREATE TABLE TimeSlot (
     IsAvailable BOOLEAN NOT NULL DEFAULT TRUE,
     FOREIGN KEY (FK_RoomID) REFERENCES Room(RoomID) ON DELETE CASCADE
 );
+-- I was here. Me be soon doing stuff
+-- Inserting Timeslots here, beginning with monday...
+INSERT INTO TimeSlot (TimeSlotID, FK_RoomID, Date, StartTime, IsAvailable)
+VALUES (1, 1, '2024-04-15', '08:00:00', TRUE),
+       (2, 1, '2024-04-15', '09:00:00', TRUE),
+       (3, 1, '2024-04-15', '10:00:00', TRUE),
+       (4, 1, '2024-04-15', '11:00:00', TRUE),
+       (5, 1, '2024-04-15', '12:00:00', TRUE),
+       (6, 1, '2024-04-15', '13:00:00', TRUE),
+       (7, 1, '2024-04-15', '14:00:00', TRUE),
+       (8, 1, '2024-04-15', '15:00:00', TRUE);
+
+       
+
 
 INSERT INTO TimeSlot (TimeSlotID, FK_RoomID, Date, StartTime)
     VALUES (1, 1, "2024-04-20", "08:00:00");

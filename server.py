@@ -38,6 +38,7 @@ def initDB():
     db, cur = initConnection()
     try:
         print("DB FILE NOT FOUND")
+        print("Creating database")
         f = open(dbInitFile, "r")
         command = ""
         for l in f.readlines():
@@ -47,9 +48,10 @@ def initDB():
         # for i in range(1,8):
         #     x=x+1
         #     cur.execute("INSERT INTO Room1 (Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday) VALUES (?, ?, ?, ?, ?, ?, ?);", (x, x, x, x, x, x, x))
-        
 
+        
         db.commit()
+        print("Database created succesfully")
 
     except FileNotFoundError:
         print(f"'{dbInitFile}' file not found. Abort!")
@@ -247,7 +249,7 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
 
     def FetchRooms(self, request, context):
         db, cur = initConnection()
-        cmd = "SELECT name FROM Room;"
+        cmd = "SELECT Name FROM Room;"
         info = None
         try:
             cur.execute(cmd)
