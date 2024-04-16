@@ -34,6 +34,11 @@ class ReservationServiceStub(object):
                 request_serializer=reservation__pb2.LogoutRequest.SerializeToString,
                 response_deserializer=reservation__pb2.LogoutResponse.FromString,
                 )
+        self.FetchAvailableSlots = channel.unary_unary(
+                '/reservation.ReservationService/FetchAvailableSlots',
+                request_serializer=reservation__pb2.FetchAvailableSlotsRequest.SerializeToString,
+                response_deserializer=reservation__pb2.FetchAvailableSlotsResponse.FromString,
+                )
         self.MakeReservation = channel.unary_unary(
                 '/reservation.ReservationService/MakeReservation',
                 request_serializer=reservation__pb2.MakeReservationRequest.SerializeToString,
@@ -73,6 +78,12 @@ class ReservationServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def Logout(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def FetchAvailableSlots(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -118,6 +129,11 @@ def add_ReservationServiceServicer_to_server(servicer, server):
                     servicer.Logout,
                     request_deserializer=reservation__pb2.LogoutRequest.FromString,
                     response_serializer=reservation__pb2.LogoutResponse.SerializeToString,
+            ),
+            'FetchAvailableSlots': grpc.unary_unary_rpc_method_handler(
+                    servicer.FetchAvailableSlots,
+                    request_deserializer=reservation__pb2.FetchAvailableSlotsRequest.FromString,
+                    response_serializer=reservation__pb2.FetchAvailableSlotsResponse.SerializeToString,
             ),
             'MakeReservation': grpc.unary_unary_rpc_method_handler(
                     servicer.MakeReservation,
@@ -209,6 +225,23 @@ class ReservationService(object):
         return grpc.experimental.unary_unary(request, target, '/reservation.ReservationService/Logout',
             reservation__pb2.LogoutRequest.SerializeToString,
             reservation__pb2.LogoutResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def FetchAvailableSlots(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/reservation.ReservationService/FetchAvailableSlots',
+            reservation__pb2.FetchAvailableSlotsRequest.SerializeToString,
+            reservation__pb2.FetchAvailableSlotsResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

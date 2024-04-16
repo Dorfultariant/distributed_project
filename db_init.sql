@@ -17,7 +17,7 @@ CREATE TABLE TimeSlot (
     TimeSlotID INTEGER PRIMARY KEY NOT NULL,
     StartTime DATE NOT NULL,
     EndTime DATE NOT NULL,
-    IsAvailable BOOLEAN NOT NULL
+    IsAvailable BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 

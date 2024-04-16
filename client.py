@@ -20,6 +20,12 @@ def mainMenu():
     print("[0] Logout")
     return input("Option: ")
 
+def printAvailableReservationInfo():
+
+
+
+    return
+
 def run():
     rootCertificates = open("ca.pem", "rb").read()
     channelCredentials = grpc.ssl_channel_credentials(rootCertificates)
@@ -38,6 +44,7 @@ def run():
 
         metadata = []
 
+
         while (userInput != "0"):
 
             if (sessionToken == None):
@@ -54,7 +61,13 @@ def run():
                         if uPass != verPass:
                             print("Passwords do not match.")
                             continue
-                        response = stub.CreateAccount(reservation_pb2.CreateAccountRequest(username=userName, name=name, password=uPass))
+                        if len(uPass) < 1:
+                            print("Password can not be empty.")
+                            continue
+                        if input("Confirm [y/n]: ").lower() == "n":
+                            continue
+
+                        response = stub.CreateAccount(reservation_pb2.CreateAccountRequest(username=str(userName), name=name, password=uPass))
 
                         if response == None or response.token == None:
                             print("Account creation failed.")

@@ -15,7 +15,6 @@ import datetime
 import os
 
 
-
 loggedUsers = {
 }
 
@@ -44,7 +43,7 @@ def initDB():
         for l in f.readlines():
             command += l
         cur.executescript(command)
-        cur.execute("""INSERT INTO Member (USERNAME, NAME, PASSWORD, SALT) VALUES ('admin', 'root', 'hashed', 'SALT');""")
+
         db.commit()
 
     except FileNotFoundError:
@@ -63,10 +62,10 @@ def initDB():
     return True
 
 
-
 """
 TODO: CHANGE SECRETS
 """
+
 
 _SECRET_KEY = "secret auth key"
 _SECRET_SALT_SEED = 59050
@@ -98,7 +97,9 @@ class AuthenticationInterceptor(grpc.ServerInterceptor):
                 print(e)
         return self.abort_handler
 
+"""
 
+"""
 def generate_token(username):
     pl = {
         "username": username,
