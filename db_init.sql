@@ -31,9 +31,9 @@ CREATE TABLE TimeSlot (
 -- Inserting Timeslots here, beginning with monday...
 INSERT INTO TimeSlot (TimeSlotID, FK_RoomID, Date, StartTime, IsAvailable)
 VALUES (1, 1, '2024-04-15', '08:00:00', TRUE),
-       (2, 1, '2024-04-15', '09:00:00', TRUE),
+       (2, 1, '2024-04-15', '09:00:00', FALSE),
        (3, 1, '2024-04-15', '10:00:00', TRUE),
-       (4, 1, '2024-04-15', '11:00:00', TRUE),
+       (4, 1, '2024-04-15', '11:00:00', FALSE),
        (5, 1, '2024-04-15', '12:00:00', TRUE),
        (6, 1, '2024-04-15', '13:00:00', TRUE),
        (7, 1, '2024-04-15', '14:00:00', TRUE),
