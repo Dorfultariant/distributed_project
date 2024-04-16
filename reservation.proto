@@ -9,11 +9,11 @@ service ReservationService {
   rpc Login(LoginRequest) returns (LoginResponse) {}
   rpc Logout(LogoutRequest) returns (LogoutResponse) {}
 
-  rpc FetchRooms(FetchRoomsRequest) returns (FetchRoomsResponse) {}
-  rpc FetchAvailableSlots(FetchAvailableSlotsRequest) returns (FetchAvailableSlotsResponse) {}
+  rpc FetchRooms(FetchRoomsRequest) returns (stream FetchRoomsResponse) {}
+  rpc FetchAvailableSlots(FetchAvailableSlotsRequest) returns (stream FetchAvailableSlotsResponse) {}
   rpc MakeReservation(MakeReservationRequest) returns (MakeReservationResponse) {}
 
-  rpc ViewReservations(ViewReservationsRequest) returns (ViewReservationsResponse) {}
+  rpc ViewReservations(ViewReservationsRequest) returns (stream ViewReservationsResponse) {}
   rpc CancelReservation(CancelReservationRequest) returns (CancelReservationResponse) {}
 }
 
@@ -70,7 +70,6 @@ message FetchRoomsRequest {
 message FetchRoomsResponse {
   repeated string rooms = 1;
 }
-
 
 message FetchAvailableSlotsRequest {
   string room = 1;

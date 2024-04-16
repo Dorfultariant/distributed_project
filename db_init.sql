@@ -16,6 +16,8 @@ INSERT INTO Room (RoomID, Name)
 VALUES (1, 'Gaming Lounge'),
        (2, 'Random example Room');
 
+INSERT INTO Room VALUES (1, "IPH");
+
 CREATE TABLE TimeSlot (
     TimeSlotID INTEGER PRIMARY KEY NOT NULL,
     FK_RoomID INT NOT NULL,
@@ -38,6 +40,15 @@ VALUES (1, 1, '2024-04-15', '08:00:00', TRUE),
 
        
 
+
+INSERT INTO TimeSlot (TimeSlotID, FK_RoomID, Date, StartTime)
+    VALUES (1, 1, "2024-04-20", "08:00:00");
+
+INSERT INTO TimeSlot (TimeSlotID, FK_RoomID, Date, StartTime)
+    VALUES (2, 1, "2024-04-20", "09:00:00");
+
+INSERT INTO TimeSlot (TimeSlotID, FK_RoomID, Date, StartTime)
+    VALUES (3, 1, "2024-04-20", "10:00:00");
 
 CREATE TABLE Reservation (
     ReservationID INTEGER PRIMARY KEY NOT NULL,

@@ -44,6 +44,11 @@ def initDB():
         for l in f.readlines():
             command += l
         cur.executescript(command)
+        # x=7
+        # for i in range(1,8):
+        #     x=x+1
+        #     cur.execute("INSERT INTO Room1 (Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday) VALUES (?, ?, ?, ?, ?, ?, ?);", (x, x, x, x, x, x, x))
+
         
         db.commit()
         print("Database created succesfully")
@@ -79,25 +84,27 @@ class AuthenticationInterceptor(grpc.ServerInterceptor):
         self._exclude_methods = ["CreateAccount", "Login", "PingServer"]
         def abort(ignored_request, context):
             context.abort(grpc.StatusCode.UNAUTHENTICATED, "Invalid Signature")
-        self.abort_handler = grpc.unary_unary_rpc_method_handler(abort)
-
+        self._abort_handler = grpc.unary_unary_rpc_method_handler(abort)
 
     def intercept_service(self, continuation, handler_call_details):
 
         method = handler_call_details.method.split('/')[::-1][0]
-
+        print("Method called", method)
         if method in self._exclude_methods:
             return continuation(handler_call_details)
 
         metadata = dict(handler_call_details.invocation_metadata)
         if "token" in metadata :
+            print("\nToken to decode: ", metadata["token"])
+            print()
             try:
                 jwt.decode(metadata["token"],_SECRET_KEY, algorithms=["HS256"])
                 return continuation(handler_call_details)
 
             except jwt.InvalidTokenError as e:
                 print(e)
-        return self.abort_handler
+
+        return self._abort_handler
 
 """
 
@@ -215,6 +222,9 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
 
         newToken = generate_token(uName)
         loggedUsers[uName] = newToken
+        print()
+        print("Generated token: ", newToken)
+        print()
         return reservation_pb2.LoginResponse(message="Successful Login", isValid=True, token=newToken)
 
 
@@ -244,30 +254,31 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
         try:
             cur.execute(cmd)
             info = cur.fetchall()
-            db.close()
+            for room in info:
+                yield reservation_pb2.FetchRoomsResponse(rooms=room)
+
         except sq.Error as e:
             print(e)
             db.close()
             return reservation_pb2.FetchRoomsResponse(rooms=None)
-        print(info)
-        return reservation_pb2.FetchRoomsResponse(rooms=info)
-
+        finally:
+            db.close()
 
     def FetchAvailableSlots(self, request, context):
         ## Test data:
-        if not verify_token(request.token):
-            return reservation_pb2.FetchAvailableSlotsResponse(message="Token error", slots=None)
         db, cur = initConnection()
         room = request.room
         date = request.date
-        cmd = """SELECT * FROM FreeTimeSlots WHERE "Room" = ?;"""
-        cur.execute(cmd, (room,))
-        print(cur.fetchone())
+        cmd = """SELECT * FROM FreeTimeSlots;""" # WHERE "Room" = ? AND Date = ?
+        cur.execute(cmd) # , (room,date,)
+
 
         dat = ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00"]
 
+        for slot in dat:
+            yield reservation_pb2.FetchAvailableSlotsResponse(message="Available slots found", slots=slot)
+        db.close()
 
-        return reservation_pb2.FetchAvailableSlotsResponse(message="Available slots found", slots=dat)
 
     def MakeReservation(self, request, context):
 
