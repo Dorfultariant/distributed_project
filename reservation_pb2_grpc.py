@@ -34,12 +34,12 @@ class ReservationServiceStub(object):
                 request_serializer=reservation__pb2.LogoutRequest.SerializeToString,
                 response_deserializer=reservation__pb2.LogoutResponse.FromString,
                 )
-        self.FetchRooms = channel.unary_unary(
+        self.FetchRooms = channel.unary_stream(
                 '/reservation.ReservationService/FetchRooms',
                 request_serializer=reservation__pb2.FetchRoomsRequest.SerializeToString,
                 response_deserializer=reservation__pb2.FetchRoomsResponse.FromString,
                 )
-        self.FetchAvailableSlots = channel.unary_unary(
+        self.FetchAvailableSlots = channel.unary_stream(
                 '/reservation.ReservationService/FetchAvailableSlots',
                 request_serializer=reservation__pb2.FetchAvailableSlotsRequest.SerializeToString,
                 response_deserializer=reservation__pb2.FetchAvailableSlotsResponse.FromString,
@@ -49,7 +49,7 @@ class ReservationServiceStub(object):
                 request_serializer=reservation__pb2.MakeReservationRequest.SerializeToString,
                 response_deserializer=reservation__pb2.MakeReservationResponse.FromString,
                 )
-        self.ViewReservations = channel.unary_unary(
+        self.ViewReservations = channel.unary_stream(
                 '/reservation.ReservationService/ViewReservations',
                 request_serializer=reservation__pb2.ViewReservationsRequest.SerializeToString,
                 response_deserializer=reservation__pb2.ViewReservationsResponse.FromString,
@@ -141,12 +141,12 @@ def add_ReservationServiceServicer_to_server(servicer, server):
                     request_deserializer=reservation__pb2.LogoutRequest.FromString,
                     response_serializer=reservation__pb2.LogoutResponse.SerializeToString,
             ),
-            'FetchRooms': grpc.unary_unary_rpc_method_handler(
+            'FetchRooms': grpc.unary_stream_rpc_method_handler(
                     servicer.FetchRooms,
                     request_deserializer=reservation__pb2.FetchRoomsRequest.FromString,
                     response_serializer=reservation__pb2.FetchRoomsResponse.SerializeToString,
             ),
-            'FetchAvailableSlots': grpc.unary_unary_rpc_method_handler(
+            'FetchAvailableSlots': grpc.unary_stream_rpc_method_handler(
                     servicer.FetchAvailableSlots,
                     request_deserializer=reservation__pb2.FetchAvailableSlotsRequest.FromString,
                     response_serializer=reservation__pb2.FetchAvailableSlotsResponse.SerializeToString,
@@ -156,7 +156,7 @@ def add_ReservationServiceServicer_to_server(servicer, server):
                     request_deserializer=reservation__pb2.MakeReservationRequest.FromString,
                     response_serializer=reservation__pb2.MakeReservationResponse.SerializeToString,
             ),
-            'ViewReservations': grpc.unary_unary_rpc_method_handler(
+            'ViewReservations': grpc.unary_stream_rpc_method_handler(
                     servicer.ViewReservations,
                     request_deserializer=reservation__pb2.ViewReservationsRequest.FromString,
                     response_serializer=reservation__pb2.ViewReservationsResponse.SerializeToString,
@@ -255,7 +255,7 @@ class ReservationService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/reservation.ReservationService/FetchRooms',
+        return grpc.experimental.unary_stream(request, target, '/reservation.ReservationService/FetchRooms',
             reservation__pb2.FetchRoomsRequest.SerializeToString,
             reservation__pb2.FetchRoomsResponse.FromString,
             options, channel_credentials,
@@ -272,7 +272,7 @@ class ReservationService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/reservation.ReservationService/FetchAvailableSlots',
+        return grpc.experimental.unary_stream(request, target, '/reservation.ReservationService/FetchAvailableSlots',
             reservation__pb2.FetchAvailableSlotsRequest.SerializeToString,
             reservation__pb2.FetchAvailableSlotsResponse.FromString,
             options, channel_credentials,
@@ -306,7 +306,7 @@ class ReservationService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/reservation.ReservationService/ViewReservations',
+        return grpc.experimental.unary_stream(request, target, '/reservation.ReservationService/ViewReservations',
             reservation__pb2.ViewReservationsRequest.SerializeToString,
             reservation__pb2.ViewReservationsResponse.FromString,
             options, channel_credentials,

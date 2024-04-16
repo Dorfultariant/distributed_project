@@ -23,10 +23,10 @@ def mainMenu():
 def makeResMenu():
     print("")
 
-def printAvailableReservationInfo(stub, token):
-    print(token)
-    response = stub.FetchRooms(reservation_pb2.FetchRoomsRequest(token=token))
-    print(response.rooms)
+def printAvailableReservationInfo(stub, token, metadata):
+    responses = stub.FetchRooms(reservation_pb2.FetchRoomsRequest(token=token), metadata=metadata)
+    for res in responses:
+        print(res.rooms)
 
     room = input("Room to reserve: ")
     date = input("Choose date (YYYY-MM-DD): ")
@@ -37,10 +37,16 @@ def printAvailableReservationInfo(stub, token):
         print("Must give date, exiting...")
         return
 
-    response = stub.FetchAvailableSlots(reservation_pb2.FetchAvailableSlotsRequest(room=room, date=date, token=token))
+    responses = stub.FetchAvailableSlots(reservation_pb2.FetchAvailableSlotsRequest(room=room, date=date, token=token), metadata=metadata)
+    s = ""
+    for res in responses:
+        # s+=str(res.slots)
+        for c in res.slots:
+            s+=str(c)
+        s+=' '
 
-    print(response.message)
-    print(response.slots)
+    #print("Row: ", res.slots[0])
+    print(s)
     return
 
 def run():
@@ -115,7 +121,7 @@ def run():
             userInput = mainMenu()
 
             if (userInput == "1"):
-                printAvailableReservationInfo(stub, sessionToken)
+                printAvailableReservationInfo(stub, sessionToken, metadata)
                 pass
 
             elif (userInput == "2"):

@@ -12,6 +12,8 @@ CREATE TABLE Room (
     Name CHAR(100) NOT NULL
 );
 
+INSERT INTO Room VALUES (1, "IPH");
+
 CREATE TABLE TimeSlot (
     TimeSlotID INTEGER PRIMARY KEY NOT NULL,
     FK_RoomID INT NOT NULL,
@@ -20,6 +22,15 @@ CREATE TABLE TimeSlot (
     IsAvailable BOOLEAN NOT NULL DEFAULT TRUE,
     FOREIGN KEY (FK_RoomID) REFERENCES Room(RoomID) ON DELETE CASCADE
 );
+
+INSERT INTO TimeSlot (TimeSlotID, FK_RoomID, Date, StartTime)
+    VALUES (1, 1, "2024-04-20", "08:00:00");
+
+INSERT INTO TimeSlot (TimeSlotID, FK_RoomID, Date, StartTime)
+    VALUES (2, 1, "2024-04-20", "09:00:00");
+
+INSERT INTO TimeSlot (TimeSlotID, FK_RoomID, Date, StartTime)
+    VALUES (3, 1, "2024-04-20", "10:00:00");
 
 CREATE TABLE Reservation (
     ReservationID INTEGER PRIMARY KEY NOT NULL,
