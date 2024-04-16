@@ -3,11 +3,15 @@ syntax = "proto3";
 package reservation;
 
 service ReservationService {
-    rpc PingServer(PingServerRequest) returns (PingServerResponse) {}
+  rpc PingServer(PingServerRequest) returns (PingServerResponse) {}
+
   rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse) {}
   rpc Login(LoginRequest) returns (LoginResponse) {}
   rpc Logout(LogoutRequest) returns (LogoutResponse) {}
+
+  rpc FetchAvailableSlots(FetchAvailableSlotsRequest) returns (FetchAvailableSlotsResponse) {}
   rpc MakeReservation(MakeReservationRequest) returns (MakeReservationResponse) {}
+
   rpc ViewReservations(ViewReservationsRequest) returns (ViewReservationsResponse) {}
   rpc CancelReservation(CancelReservationRequest) returns (CancelReservationResponse) {}
 }
@@ -59,6 +63,16 @@ message LogoutResponse {
 // End of Logout
 
 
+message FetchAvailableSlotsRequest {
+  string room = 1;
+  string date = 2;
+  string token = 3;
+}
+
+message FetchAvailableSlotsResponse {
+  repeated string slots = 1;
+}
+
 // RPC reservation methods
 message MakeReservationRequest {
   string username = 1;
@@ -80,8 +94,9 @@ message ViewReservationsResponse {
 }
 
 message CancelReservationRequest {
-  string reservation_id = 1;
-  string token = 2;
+  string username = 1;
+  string reservation_id = 2;
+  string token = 3;
 }
 
 message CancelReservationResponse {
