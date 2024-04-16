@@ -100,6 +100,7 @@ VALUES (49, 1, '2024-04-21', '08:00:00', TRUE),
        (55, 1, '2024-04-21', '14:00:00', TRUE),
        (56, 1, '2024-04-21', '15:00:00', TRUE);
 
+
 CREATE TABLE Reservation (
     ReservationID INTEGER PRIMARY KEY NOT NULL,
     ReservationDate DATE NOT NULL,
