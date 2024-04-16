@@ -32,6 +32,7 @@ INSERT INTO TimeSlot (TimeSlotID, FK_RoomID, Date, StartTime)
 INSERT INTO TimeSlot (TimeSlotID, FK_RoomID, Date, StartTime)
     VALUES (3, 1, "2024-04-20", "10:00:00");
 
+
 CREATE TABLE Reservation (
     ReservationID INTEGER PRIMARY KEY NOT NULL,
     ReservationDate DATE NOT NULL,

@@ -252,6 +252,7 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
         try:
             cur.execute(cmd)
             info = cur.fetchall()
+            print("Info: ", info)
             for room in info:
                 yield reservation_pb2.FetchRoomsResponse(rooms=room)
 
@@ -267,20 +268,27 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
         db, cur = initConnection()
         room = request.room
         date = request.date
-        cmd = """SELECT * FROM FreeTimeSlots;""" # WHERE "Room" = ? AND Date = ?
-        cur.execute(cmd) # , (room,date,)
+        cmd = """SELECT * FROM FreeTimeSlots WHERE "Room" = ? AND Date = ?;"""
+        cur.execute(cmd, (room,date,))
 
+        dat = cur.fetchall()
+        startTime = [ r[3] for r in dat ]
+        msg = f"Available slots for {date}"
 
-        dat = ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00"]
+        yield reservation_pb2.FetchAvailableSlotsResponse(message=msg, slots=startTime)
 
-        for slot in dat:
-            yield reservation_pb2.FetchAvailableSlotsResponse(message="Available slots found", slots=slot)
         db.close()
 
 
     def MakeReservation(self, request, context):
+        uname = request.username
+        room = request.room
+        timeslot = request.timeslot
+        print("User:",uname, " Room:", room, " Time:",timeslot)
 
-        return reservation_pb2.MakeReservationResponse(message="Successful reservation")
+        cmd = "SELECT "
+
+        return reservation_pb2.MakeReservationResponse(message="Successful reservation", isSuccessful=True)
 
 
     def ViewReservations(self, request, context):

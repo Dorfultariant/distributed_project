@@ -86,11 +86,13 @@ message FetchAvailableSlotsResponse {
 message MakeReservationRequest {
   string username = 1;
   string room = 2;
-  string timeslot = 3;
-  string token = 4;
+  string date = 3;
+  string timeslot = 4;
+  string token = 5;
 }
 message MakeReservationResponse {
   string message = 1;
+  bool isSuccessful = 2;
 }
 
 message ViewReservationsRequest {
