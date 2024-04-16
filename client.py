@@ -22,10 +22,13 @@ def mainMenu():
 
 def makeResMenu():
     print("")
-
-
-def printAvailableReservationInfo(stub, username, token, metadata):
-    responses = stub.FetchRooms(reservation_pb2.FetchRoomsRequest(token=token), metadata=metadata)
+def printAvailableReservationInfo(stub, token, metadata):
+    try: 
+        responses = stub.FetchRooms(reservation_pb2.FetchRoomsRequest(token=token), metadata=metadata)
+    except grpc.RpcError as e:
+        
+        print("gRPC error:", e.code(), e.details())
+        
     for res in responses:
         print(res.rooms)
 
@@ -38,18 +41,29 @@ def printAvailableReservationInfo(stub, username, token, metadata):
     if len(date) < 1:
         print("Must give date, exiting...")
         return
-
     try:
         dt.strptime(date, "%Y-%m-%d")
     except ValueError as e:
         print("Incorrect date format, should be YYYY-MM-DD", e)
         return False
 
-    responses = stub.FetchAvailableSlots(reservation_pb2.FetchAvailableSlotsRequest(room=room, date=date, token=token), metadata=metadata)
-
+    
+    try:
+        responses = stub.FetchAvailableSlots(reservation_pb2.FetchAvailableSlotsRequest(room=room, date=date, token=token), metadata=metadata)
+    
+    except grpc.RpcError as e:
+        print("gRPC error when fetching available slots:", e.code(), e.details())
+        
+    if responses == None:
+        print("Responses is  None")
+    if  responses.token == None:
+        print("responses.token is None")
+    
     i = 1
     freeList = []
     print("### Free Slots ###")
+#    print("Fetching available slots")
+        
     for res in responses:
         for c in res.slots:
             print(f"[{i}]:", c)
@@ -94,12 +108,20 @@ def printAvailableReservationInfo(stub, username, token, metadata):
 
 def run():
     rootCertificates = open("ca.pem", "rb").read()
-    channelCredentials = grpc.ssl_channel_credentials(rootCertificates)
-
+    try:
+        channelCredentials = grpc.ssl_channel_credentials(rootCertificates)
+    except grpc.RpcError as e:
+        print("gRPC error when getting channel credentials:", e.code(), e.details())
+        
     with grpc.secure_channel("localhost:44000", channelCredentials) as channel:
         stub = reservation_pb2_grpc.ReservationServiceStub(channel)
         # TEST PING TO SERVER
-        response = stub.PingServer(reservation_pb2.PingServerRequest(ping="Gib ping"))
+        try:
+            response = stub.PingServer(reservation_pb2.PingServerRequest(ping="Gib ping"))
+        except grpc.RpcError as e:
+            print("gRPC error when pingin server:", e.code(), e.details())
+        except Exception as e:
+            print("Unexpected error:", e)
         if response.isPinging:
             print(response.ping)
 
@@ -121,8 +143,15 @@ def run():
                         print("#### Create Account ####")
                         userName = input("Give username: ")
                         name = input("Give name: ")
-                        uPass = getpass.getpass("New password: ")
-                        verPass = getpass.getpass("Verify password: ")
+                        try:
+                            uPass = getpass.getpass("New password: ")
+                        except Exception as e:
+                            print("Error getting user password")
+                        try:    
+                            verPass = getpass.getpass("Verify password: ")
+                        except Exception as e:
+                            print("Error verifying password")
+                            
                         if uPass != verPass:
                             print("Passwords do not match.")
                             continue
@@ -131,15 +160,21 @@ def run():
                             continue
                         if input("Confirm [y/n]: ").lower() == "n":
                             continue
-
-                        response = stub.CreateAccount(reservation_pb2.CreateAccountRequest(username=str(userName), name=name, password=uPass))
-
-                        if response == None or response.token == None:
-                            print("Account creation failed.")
+                        try:
+                            response = stub.CreateAccount(reservation_pb2.CreateAccountRequest(username=str(userName), name=name, password=uPass))
+                        except grpc.RpcError as e:
+                            print("gRPC error when creating account request:", e.code(), e.details())
+                        except Exception as e:
+                            print("Unexpected error when creating account:", e)
+                            
+                        if response == None:
+                            print("Account creation failed, response is None")
                             continue
+                        if response.token == None:
+                            print("Account creation failed, response.token is None")
 
-                        print(response.message)
-                        metadata.append(("token", response.token))
+                        print("Response.message: ",response.message)
+                        metadata.append(("response.token: ", response.token))
                         sessionToken = response.token
                         break
 
@@ -147,13 +182,19 @@ def run():
                     while (1):
                         print("#### Login ####")
                         userName = input("Give username: ")
-                        uPass = getpass.getpass("Password: ")
-                        response = stub.Login(reservation_pb2.LoginRequest(username=userName, password=uPass))
+                        try:
+                            uPass = getpass.getpass("Password: ")
+                        except Exception as e:
+                            print("Error while getting password")
+                        try:
+                            response = stub.Login(reservation_pb2.LoginRequest(username=userName, password=uPass))
+                        except grpc.RpcError as e:
+                            print("Error while getting login request", e.code(), e.details())
                         if not response.isValid:
-                            print(response.message)
+                            print("server's response: ",response.message)
                             continue
                         else:
-                            print("Succ", response.message)
+                            print("Successfull login: ", response.message)
                             metadata.append(("token", response.token))
                             sessionToken = response.token
                         break
@@ -174,9 +215,13 @@ def run():
                 pass
 
             elif (userInput == "0"):
-
-                response = stub.Logout(reservation_pb2.LogoutRequest(username=userName, token=sessionToken), metadata=metadata)
-                print(response.message)
+                try:
+                    response = stub.Logout(reservation_pb2.LogoutRequest(username=userName, token=sessionToken), metadata=metadata)
+                    print(response.message)
+                except grpc.RpcError as e:
+                    print("Grpc Error when logging out:", e.code(), e.details())
+                    
+                
                 break
             else:
                 print("Unknown selection")
