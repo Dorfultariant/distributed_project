@@ -12,22 +12,14 @@ CREATE TABLE Room (
     Name CHAR(100) NOT NULL
 );
 
-
 CREATE TABLE TimeSlot (
     TimeSlotID INTEGER PRIMARY KEY NOT NULL,
-    StartTime DATE NOT NULL,
-    EndTime DATE NOT NULL,
-    IsAvailable BOOLEAN NOT NULL DEFAULT TRUE
-);
-
-
-CREATE TABLE RoomTimeSlots (
     FK_RoomID INT NOT NULL,
-    FK_TimeSlotID INT NOT NULL,
-    FOREIGN KEY (FK_RoomID) REFERENCES Room(RoomID) ON DELETE CASCADE,
-    FOREIGN KEY (FK_TimeSlotID) REFERENCES TimeSlot(TimeSlotID) ON DELETE CASCADE
+    Date DATE NOT NULL,
+    StartTime TIME NOT NULL,
+    IsAvailable BOOLEAN NOT NULL DEFAULT TRUE,
+    FOREIGN KEY (FK_RoomID) REFERENCES Room(RoomID) ON DELETE CASCADE
 );
-
 
 CREATE TABLE Reservation (
     ReservationID INTEGER PRIMARY KEY NOT NULL,
@@ -44,11 +36,10 @@ CREATE TABLE Reservation (
 CREATE VIEW FreeTimeSlots AS
     SELECT r.RoomID AS "Room ID",
         r.Name AS "Room",
-        ts.StartTime AS "Start",
-        ts.EndTime AS "End"
+        ts.Date AS "Date",
+        ts.StartTime AS "Start Time"
     FROM Room r
-    JOIN RoomTimeSlots rts ON r.RoomID = rts.FK_RoomID
-    JOIN TimeSlot ts ON rts.FK_TimeSlotID = ts.TimeSlotID
+    JOIN TimeSlot ts ON ts.FK_RoomID = r.RoomID
     --GROUP BY r.RoomID, r.Name, ts.StartTime, ts.EndTime
     ORDER BY ts.StartTime;
 

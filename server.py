@@ -191,16 +191,11 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
 
 
     def Login(self, request, context):
-
-
         uName = request.username
         uPass = request.password
 
         cmd = "SELECT * FROM Member WHERE username = ?;"
         db, cur = initConnection()
-        cmd = """SELECT * FROM FreeTimeSlots;"""
-        cur.execute(cmd)
-        print(cur.fetchone())
         info = []
         try:
             cur.execute(cmd, (uName,))
@@ -240,6 +235,22 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
 
         return reservation_pb2.LogoutResponse(message="Successful Logout", token=None)
 
+    def FetchRooms(self, request, context):
+        db, cur = initConnection()
+        cmd = "SELECT name FROM Room;"
+        info = None
+        try:
+            cur.execute(cmd)
+            info = cur.fetchall()
+            db.close()
+        except sq.Error as e:
+            print(e)
+            db.close()
+            return reservation_pb2.FetchRoomsResponse(rooms=None)
+        print(info)
+        return reservation_pb2.FetchRoomsResponse(rooms=info)
+
+
     def FetchAvailableSlots(self, request, context):
         ## Test data:
         if not verify_token(request.token):
@@ -247,7 +258,7 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
         db, cur = initConnection()
         room = request.room
         date = request.date
-        cmd = """SELECT * FROM FreeTimeSlots WHERE "Room ID" = ?;"""
+        cmd = """SELECT * FROM FreeTimeSlots WHERE "Room" = ?;"""
         cur.execute(cmd, (room,))
         print(cur.fetchone())
 
