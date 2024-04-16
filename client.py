@@ -194,7 +194,7 @@ def run():
                             print("server's response: ",response.message)
                             continue
                         else:
-                            print("Successfull login: ", response.message)
+                            print("Response message from server: ", response.message)
                             metadata.append(("token", response.token))
                             sessionToken = response.token
                         break
