@@ -129,6 +129,7 @@ CREATE VIEW FreeTimeSlots AS
 
 CREATE VIEW UserReservations AS
     SELECT
+        rs.ReservationID AS "RID",
         u.UserID AS "UID",
         u.UserName AS "Name",
         r.RoomID AS "Room ID",
@@ -139,7 +140,6 @@ FROM Member u
     JOIN TimeSlot ts    ON rs.FK_TimeSlotID = ts.TimeSlotID
     JOIN Room r         ON rs.FK_RoomID     = r.RoomID
     JOIN Reservation rs ON rs.FK_UserID     = u.UserID
-    --GROUP BY r.RoomID, r.Name, ts.StartTime, ts.EndTime
     ORDER BY ts.Date;
 
 
