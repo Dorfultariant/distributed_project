@@ -61,8 +61,8 @@ def cancelReservation(stub, userName, token, metadata):
     id = input("Give number to cancel (ex. 2): ")
     try:
         id = int(id) - 1
-    except ValueError:
-        print("Incorrect indice")
+    except ValueError as e:
+        print("Incorrect indice: ", e)
         return False
     if id < 0 or id >= size:
         print("No Reservation ID found")
@@ -129,11 +129,13 @@ def printAvailableReservationInfo(stub, username, token, metadata):
     slot = -1
     while(slot != 0):
         slot = input("Select timeslot to reserve (ex. 1): ")
+        
         try:
             slot = int(slot)
-        except ValueError:
-            print("Not correct")
+        except ValueError as e:
+            print("Not correct: ", e)
             continue
+        
         slot -= 1
         if slot >= len(freeList) or slot < 0:
             print("Incorrect slot")
@@ -143,16 +145,19 @@ def printAvailableReservationInfo(stub, username, token, metadata):
 
     time = str(freeList[int(slot)])
     print("Selected 1 hour timeslot:", time)
-
-    response = stub.MakeReservation(reservation_pb2.MakeReservationRequest(username=username, room=selectedRoom, date=date, timeslot=time, token=token), metadata=metadata)
-
+    
+    try:
+        response = stub.MakeReservation(reservation_pb2.MakeReservationRequest(username=username, room=selectedRoom, date=date, timeslot=time, token=token), metadata=metadata)
+    except grpc.RpcError as e:
+        print("Error making reservation: ",e.code(), e.details())
+        
     if not response.isSuccessful:
         print(response.message)
         ### TODO: ALLOW USER TO TRY TO SELECT NEW SLOT
         return False
     print(response.message)
 
-    print("Receipt:")
+    print("Receipt: ")
     print(f"Reserved {selectedRoom} for 1 Hour \non {date} at {time} o'clock.")
     return True
 

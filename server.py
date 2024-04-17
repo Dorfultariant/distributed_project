@@ -292,7 +292,7 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
             yield reservation_pb2.FetchAvailableSlotsResponse(message=msg, slots=startTime)
             db.close()
         except Exception as e:
-            print("Error while fetching available slots")
+            print("Error while fetching available slots", e)
 
 
     def MakeReservation(self, request, context):
@@ -313,64 +313,75 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
 
         if '-' in uname:
             uname.replace('-','')
+        try:
+            db, cur = initConnection()
+        except Exception as e:
+            print("Error connecting to the database: ", e)
+            return reservation_pb2.ViewReservationsResponse(message="Database connection error")
+        try:
+            
+            cmd = "SELECT UserID FROM Member WHERE UserName = ?;"
+            cur.execute(cmd, (uname,))
+            uid = cur.fetchone()
+            if uid == None:
+                print("No user found in ViewReservations...")
+                return reservation_pb2.ViewReservationsResponse(message="No user found")
 
-        db, cur = initConnection()
-        cmd = "SELECT UserID FROM Member WHERE UserName = ?;"
-        cur.execute(cmd, (uname,))
-        uid = cur.fetchone()
-        if uid == None:
-            print("No user found in ViewReservations...")
-            return reservation_pb2.ViewReservationsResponse(message="No user found")
+            uid = int(uid[0])
 
-        uid = int(uid[0])
+            cmd = """SELECT * FROM UserReservations WHERE "UID" = ?;"""
+            cur.execute(cmd, (uid,))
+            reservations = cur.fetchall()
 
-        cmd = """SELECT * FROM UserReservations WHERE "UID" = ?;"""
-        cur.execute(cmd, (uid,))
-        reservations = cur.fetchall()
-
-        resString = ""
+            resString = ""
 
         ## We want to select specific columns from the query:
-        for res in reservations:
-            resString += f"{res[0]};"
-            resString += f"{res[2]};"
-            resString += f"{res[4]};"
-            resString += f"{res[5]};"
-            resString += f"{res[6]}\n"
+            for res in reservations:
+                resString += f"{res[0]};"
+                resString += f"{res[2]};"
+                resString += f"{res[4]};"
+                resString += f"{res[5]};"
+                resString += f"{res[6]}\n"
 
         ## Remove trailing newline
-        resString = resString.rstrip('\n')
+            resString = resString.rstrip('\n')
+        except Exception as e:
+            print("Error retrieving reservations:", e)
+            return reservation_pb2.ViewReservationsResponse(message="Error retrieving reservations")
 
         return reservation_pb2.ViewReservationsResponse(reservations=resString)
 
 
     def CancelReservation(self, request, context):
-
+        
         return reservation_pb2.CancelReservationResponse(message="Successfully removed reservation")
 
 
 def serve():
-    server = grpc.server(
-        futures.ThreadPoolExecutor(),
-        interceptors=(AuthenticationInterceptor(),),
-    )
+    try:
+        server = grpc.server(
+            futures.ThreadPoolExecutor(),
+            interceptors=(AuthenticationInterceptor(),),
+        )
 
-    reservation_pb2_grpc.add_ReservationServiceServicer_to_server(ReservationServiceServicer(), server)
-    port = 44000
+        reservation_pb2_grpc.add_ReservationServiceServicer_to_server(ReservationServiceServicer(), server)
+        port = 44000
 
-    # stores servers private key and cert
-    privateKey = open("server.key", "rb").read()
-    certificateChain = open("server.pem", "rb").read()
+        # stores servers private key and cert
+        privateKey = open("server.key", "rb").read()
+        certificateChain = open("server.pem", "rb").read()
 
-    # Generate server credentials
-    serverCredentials = grpc.ssl_server_credentials(
-        ((privateKey, certificateChain),),
-    )
+        # Generate server credentials
+        serverCredentials = grpc.ssl_server_credentials(
+            ((privateKey, certificateChain),),
+        )
 
-    server.add_secure_port("localhost:" + str(port), serverCredentials)
-    print("Server rev up on: "+  str(port))
-    server.start()
-    server.wait_for_termination()
+        server.add_secure_port("localhost:" + str(port), serverCredentials)
+        print("Server rev up on: "+  str(port))
+        server.start()
+        server.wait_for_termination()
+    except Exception as e:
+        print("Error starting server:", e)
     
 
 if __name__=="__main__":
