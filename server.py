@@ -296,14 +296,33 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
 
 
     def MakeReservation(self, request, context):
+        
         try:
             uname = request.username
             room = request.room
             timeslot = request.timeslot    
+            date = request.date    
+
         except Exception as e:
             print("Error while getting data from request: ", e)
-            print("User:",uname, " Room:", room, " Time:",timeslot)
-        print("User:",uname, " Room:", room, " Time:",timeslot)
+            print("User:",uname, " Room:", room, " Time:",timeslot, "Date:", date)
+        #print("Kokeiluprintti: User:",uname, " Room:", room, " Time:",timeslot, "Date:", date)
+
+        db, cur = initConnection()
+        
+        # Construct the SQL insert query
+        cmd = """
+            INSERT INTO Reservation (ReservationDate, FK_TimeSlotID, FK_RoomID, FK_UserID)
+            VALUES (?, 
+            (SELECT TimeSlotID FROM TimeSlot WHERE Date = ? AND StartTime = ? AND FK_RoomID = (SELECT RoomID FROM Room WHERE Name = ?)), 
+            (SELECT RoomID FROM Room WHERE Name = ?), 
+            (SELECT UserID FROM Member WHERE Username = ?))
+            """
+        
+        # Add to database the reservation
+        cur.execute(cmd, (date, date, timeslot, room, room, uname))
+        #print ("Tässä työnnetään databaseen juttuja: Aika:", date, "Timeslot: ",timeslot, "Huone: ", room, "Käyttäjä: ", uname)
+
 
         return reservation_pb2.MakeReservationResponse(message="Successful reservation", isSuccessful=True)
 
