@@ -119,7 +119,7 @@ def printAvailableReservationInfo(stub, username, token, metadata):
         responses = stub.FetchAvailableSlots(reservation_pb2.FetchAvailableSlotsRequest(room=selectedRoom, date=date, token=token), metadata=metadata)
     
     except grpc.RpcError as e:
-        print("gRPC error when fetching available slots:", e.code(), e.details())
+        print("Error when fetching available slots: ")
         
     if responses == None:
         print("Responses is None")
