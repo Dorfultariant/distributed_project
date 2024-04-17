@@ -124,7 +124,6 @@ CREATE VIEW FreeTimeSlots AS
         ts.IsAvailable AS "Available"
     FROM Room r
     JOIN TimeSlot ts ON ts.FK_RoomID = r.RoomID
-    --GROUP BY r.RoomID, r.Name, ts.StartTime, ts.EndTime
     ORDER BY ts.StartTime;
 
 CREATE VIEW UserReservations AS
