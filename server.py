@@ -319,9 +319,15 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
             (SELECT UserID FROM Member WHERE Username = ?))
             """
         
-        # Add to database the reservation
+        # Add to database the reservation + set timeslot to reserved
         cur.execute(cmd, (date, date, timeslot, room, room, uname))
         #print ("Tässä työnnetään databaseen juttuja: Aika:", date, "Timeslot: ",timeslot, "Huone: ", room, "Käyttäjä: ", uname)
+        
+        cmd = '''UPDATE TimeSlot SET isAvailable = False WHERE TimeSlotID = (SELECT TimeSlotID FROM TimeSlot WHERE Date = ? AND StartTime = ? AND FK_RoomID = (SELECT RoomID FROM Room WHERE Name = ?));'''
+        cur.execute(cmd, (date, timeslot, room))
+        db.commit()
+
+        
 
 
         return reservation_pb2.MakeReservationResponse(message="Successful reservation", isSuccessful=True)
