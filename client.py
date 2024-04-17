@@ -27,7 +27,7 @@ def checkReservations(stub, userName, token, metadata):
         response = stub.ViewReservations(reservation_pb2.ViewReservationsRequest(username=userName, token=token), metadata=metadata)
 
     except grpc.RpcError as e:
-        print("Could not fetch data: ", e)
+        print("Could not fetch data from server: ", e)
         return []
 
     reservations = response.reservations.split("\n")
@@ -57,7 +57,7 @@ def cancelReservation(stub, userName, token, metadata):
     try:
         reservations = checkReservations(stub, userName, token, metadata)
     except Exception as e:
-        print("Error receiving reservations: ", e)
+        print("Error getting reservations: ", e)
     
     printReservations(reservations)
     if len(reservations) <= 0:
@@ -71,7 +71,7 @@ def cancelReservation(stub, userName, token, metadata):
         return False
 
     if id <= 0:
-        print("No Reservation ID found")
+        print("Invalid reservation ID")
         return False
 
     response = stub.CancelReservation(reservation_pb2.CancelReservationRequest(username=userName, reservation_id=str(id), token=token), metadata=metadata)
@@ -91,21 +91,21 @@ def printAvailableReservationInfo(stub, username, token, metadata):
         print(f"[{i}] {res.rooms}")
         roomList.append(res.rooms)
         i+=1
-    room = input("Reserver room by number (ex. 2): ")
+    room = input("Reserve room by number (ex. 2): ")
     date = input("Choose date (YYYY-MM-DD): ")
     try:
         room = int(room)
     except ValueError:
-        print("Wrong room number")
+        print("Invalid room number")
         return False
     room -= 1
 
     if room > len(roomList):
-        print("Incorrect number")
+        print("Invalid room number")
         return False
 
     if len(date) < 1:
-        print("Must give date, exiting...")
+        print("Invalid Date")
         return
     try:
         dt.strptime(date, "%Y-%m-%d")
@@ -119,7 +119,7 @@ def printAvailableReservationInfo(stub, username, token, metadata):
         responses = stub.FetchAvailableSlots(reservation_pb2.FetchAvailableSlotsRequest(room=selectedRoom, date=date, token=token), metadata=metadata)
     
     except grpc.RpcError as e:
-        print("gRPC error when fetching available slots:", e.code(), e.details())
+        print("Error when fetching available slots: ")
         
     if responses == None:
         print("Responses is None")

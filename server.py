@@ -305,8 +305,10 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
             msg = f"Available slots for {date}"
             yield reservation_pb2.FetchAvailableSlotsResponse(message=msg, slots=startTime)
             db.close()
+        except grpc.RpcError as e:
+            print("Error while fetching available slots", e.code(), e.details())
         except Exception as e:
-            print("Error while fetching available slots", e)
+            print("Error fetching slots: ", e)
 
 
     def MakeReservation(self, request, context):
