@@ -15,13 +15,13 @@ import datetime
 import os
 
 
+## Connects username to their access token
 loggedUsers = {
 }
 
 
 dbInitFile = "db_init.sql"
 dbFile = "main.db"
-
 
 
 def initConnection():
@@ -45,12 +45,7 @@ def initDB():
         for l in f.readlines():
             command += l
         cur.executescript(command)
-        # x=7
-        # for i in range(1,8):
-        #     x=x+1
-        #     cur.execute("INSERT INTO Room1 (Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday) VALUES (?, ?, ?, ?, ?, ?, ?);", (x, x, x, x, x, x, x))
 
-        
         db.commit()
         print("Database created succesfully")
 
@@ -71,15 +66,15 @@ def initDB():
 
 
 """
-TODO: CHANGE SECRETS
+##### IF USED IN NETWORK #####
+TODO: CHANGE SECRETS AND MOVE TO ENVIRONMENT VARIABLES
 """
-
-
 _SECRET_KEY = "secret auth key"
 _SECRET_SALT_SEED = 59050
 
 
-### NOTE: THIS CLASS IS FOR INTERCEPTING AND VERIFYING USER REQUESTS VIA TOKEN AUTHENTICATION:
+### NOTE: THIS CLASS IS FOR INTERCEPTING AND VERIFYING
+#         USER REQUESTS VIA TOKEN AUTHENTICATION:
 class AuthenticationInterceptor(grpc.ServerInterceptor):
     def __init__(self):
         self._exclude_methods = ["CreateAccount", "Login", "PingServer"]
@@ -108,7 +103,7 @@ class AuthenticationInterceptor(grpc.ServerInterceptor):
         return self._abort_handler
 
 """
-
+NOTE: TOKEN GENERATION AND VERIFICATION FUNCTIONS FOR USER SESSION AUTHENTICATION
 """
 def generate_token(username):
     pl = {
@@ -121,7 +116,8 @@ def generate_token(username):
         print("Error while encoding jwt: ",e)
     return token
 
-
+### THIS FUNCTION IS NOT ABSOLUTELY NECESSARY
+### AS VERIFICATION IS MOVED TO AuthenticationInterceptor CLASS
 def verify_token(token):
     try:
         payload = jwt.decode(
@@ -328,20 +324,24 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
 
         uid = int(uid[0])
 
-        cmd = """SELECT * FROM UserReservations WHERE "UID" = ?;""" #WHERE 'UID' = ?
+        cmd = """SELECT * FROM UserReservations WHERE "UID" = ?;"""
         cur.execute(cmd, (uid,))
-        ress = cur.fetchall()
+        reservations = cur.fetchall()
 
-        ret = ""
+        resString = ""
 
         ## We want to select specific columns from the query:
-        for res in ress:
-            ret += f"{res[1]};"
-            ret += f"{res[3]};"
-            ret += f"{res[4]};"
-            ret += f"{res[5]}\n"
+        for res in reservations:
+            resString += f"{res[0]};"
+            resString += f"{res[2]};"
+            resString += f"{res[4]};"
+            resString += f"{res[5]};"
+            resString += f"{res[6]}\n"
 
-        return reservation_pb2.ViewReservationsResponse(reservations=ret)
+        ## Remove trailing newline
+        resString = resString.rstrip('\n')
+
+        return reservation_pb2.ViewReservationsResponse(reservations=resString)
 
 
     def CancelReservation(self, request, context):
@@ -372,9 +372,6 @@ def serve():
     server.start()
     server.wait_for_termination()
     
-    
-
-
 
 if __name__=="__main__":
     if initDB():

@@ -23,29 +23,51 @@ def mainMenu():
     return input("Option: ")
 
 def checkReservations(stub, userName, token, metadata):
-
     try:
-        responses = stub.ViewReservations(reservation_pb2.ViewReservationsRequest(username=userName, token=token), metadata=metadata)
+        response = stub.ViewReservations(reservation_pb2.ViewReservationsRequest(username=userName, token=token), metadata=metadata)
 
     except grpc.RpcError as e:
         print("Could not fetch data: ", e)
-        return False
+        return []
 
-    resList = responses.reservations.split("\n")
-    resList.remove('')
+    reservations = response.reservations.split("\n")
+    parsed = [ r.split(';') for r in reservations if r ]
+    return parsed
 
-    if not resList:
+
+def printReservations(reservations):
+    if not reservations:
         print("No reservations found")
         return False
 
-    print("\nFound reservations:")
-    for r in resList:
-        n, r, d, t = r.split(';')
-        print(f"Name: {n}")
-        print(f"Room: {r}")
-        print(f"Date: {d}")
-        print(f"Time: {t}")
+    print("\n### Found reservations ###")
+    for r in reservations:
+        ID, N, R, D, T = r
+        print(f"[{ID}] Reservation:")
+        print(f"Name: {N}")
+        print(f"Room: {R}")
+        print(f"Date: {D}")
+        print(f"Time: {T}")
         print()
+    return True
+
+
+def cancelReservation(stub, userName, token, metadata):
+    reservations = checkReservations(stub, userName, token, metadata)
+    size = len(reservations)
+    printReservations(reservations)
+
+    print("### Cancel Reservation ###")
+    id = input("Give number to cancel (ex. 2): ")
+    try:
+        id = int(id) - 1
+    except ValueError:
+        print("Incorrect indice")
+        return False
+    if id < 0 or id >= size:
+        print("No Reservation ID found")
+        return False
+
 
     return True
 
@@ -242,8 +264,8 @@ def run():
                 pass
 
             elif (userInput == "3"):
-                checkReservations(stub, userName, sessionToken, metadata)
-
+                res = checkReservations(stub, userName, sessionToken, metadata)
+                printReservations(res)
             elif (userInput == "0"):
                 try:
                     response = stub.Logout(reservation_pb2.LogoutRequest(username=userName, token=sessionToken), metadata=metadata)
