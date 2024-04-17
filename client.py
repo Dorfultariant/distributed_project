@@ -53,7 +53,11 @@ def printReservations(reservations):
 
 
 def cancelReservation(stub, userName, token, metadata):
-    reservations = checkReservations(stub, userName, token, metadata)
+    try:
+        reservations = checkReservations(stub, userName, token, metadata)
+    except Exception as e:
+        print("Error receiving reservations: ", e)
+    
     printReservations(reservations)
     if len(reservations) <= 0:
         return False

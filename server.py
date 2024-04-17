@@ -168,8 +168,10 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
 
     def CreateAccount(self, request, context):
         ### FOR EACH USER // REQUEST, A NEW CUR AND DB ARE CREATED TO ACCESS DATABASE
-        db, cur = initConnection()
-
+        try:
+            db, cur = initConnection()
+        except Exception as e:
+            print("Error connecting to server")
         uName = request.username
         name = request.name
 
@@ -217,7 +219,10 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
         uPass = request.password
 
         cmd = "SELECT * FROM Member WHERE username = ?;"
-        db, cur = initConnection()
+        try:
+            db, cur = initConnection()
+        except Exception as e:
+            print("Error connecting to server")
         info = []
         try:
             cur.execute(cmd, (uName,))
@@ -243,7 +248,10 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
 
     def Logout(self, request, context):
         uName = request.username
-        db, cur = initConnection()
+        try:
+            db, cur = initConnection()
+        except Exception as e:
+            print("Error connecting to server")
         cmd = "SELECT username FROM Member WHERE username = ?;"
         try:
             cur.execute(cmd, (uName,))
@@ -261,8 +269,14 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
         return reservation_pb2.LogoutResponse(message="Successful Logout", token=None)
 
     def FetchRooms(self, request, context):
-        db, cur = initConnection()
-        cmd = "SELECT Name FROM Room;"
+        try:
+            db, cur = initConnection()
+        except Exception as e:
+            print("Error connecting to server")
+        try:  
+            cmd = "SELECT Name FROM Room;"
+        except Exception as e:
+            print("Error getting name for room",e)
         info = None
         try:
             cur.execute(cmd)
