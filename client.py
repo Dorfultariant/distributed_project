@@ -65,10 +65,11 @@ def cancelReservation(stub, userName, token, metadata):
     print("### Cancel Reservation ###")
     id = input("Give ID to cancel (ex. 2): ")
     try:
-        id = int(id) - 1
+        id = int(id)
     except ValueError as e:
         print("Incorrect indice: ", e)
         return False
+
     if id <= 0:
         print("No Reservation ID found")
         return False
