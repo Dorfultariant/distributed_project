@@ -310,7 +310,8 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
 
 
     def MakeReservation(self, request, context):
-        
+        #Niin paljon uugabuugabuuta
+        #Kokeillaan juttuja
         try:
             uname = request.username
             room = request.room
