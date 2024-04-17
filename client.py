@@ -37,7 +37,7 @@ def checkReservations(stub, userName, token, metadata):
 
 def printReservations(reservations):
     if not reservations:
-        print("No reservations found")
+        print("\nNo reservations found.")
         return False
 
     print("\n### Found reservations ###")
@@ -54,20 +54,22 @@ def printReservations(reservations):
 
 def cancelReservation(stub, userName, token, metadata):
     reservations = checkReservations(stub, userName, token, metadata)
-    size = len(reservations)
     printReservations(reservations)
-
-    print("### Cancel Reservation ###")
-    id = input("Give number to cancel (ex. 2): ")
-    try:
-        id = int(id) - 1
-    except ValueError:
-        print("Incorrect indice")
+    if len(reservations) <= 0:
         return False
-    if id < 0 or id >= size:
+    print("### Cancel Reservation ###")
+    id = input("Give ID to cancel (ex. 2): ")
+    try:
+        id = int(id)
+    except ValueError:
+        print("Incorrect ID")
+        return False
+    if id <= 0:
         print("No Reservation ID found")
         return False
 
+    response = stub.CancelReservation(reservation_pb2.CancelReservationRequest(username=userName, reservation_id=str(id), token=token), metadata=metadata)
+    print(response.message)
 
     return True
 
@@ -261,11 +263,12 @@ def run():
                 print("Reservation Done")
 
             elif (userInput == "2"):
-                pass
+                cancelReservation(stub, userName, sessionToken, metadata)
 
             elif (userInput == "3"):
                 res = checkReservations(stub, userName, sessionToken, metadata)
                 printReservations(res)
+
             elif (userInput == "0"):
                 try:
                     response = stub.Logout(reservation_pb2.LogoutRequest(username=userName, token=sessionToken), metadata=metadata)

@@ -345,7 +345,62 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
 
 
     def CancelReservation(self, request, context):
+        db, cur = initConnection()
+        uname = request.username
+        rid = request.reservation_id
+        ## Fetch userid from db
+        cmd = '''SELECT UserID FROM Member WHERE UserName = ?;'''
+        cur.execute(cmd, (uname,))
+        uid = cur.fetchone()
+        try:
+            uid = uid[0]
+            rid = int(rid)
+            uid = int(uid)
 
+        except IndexError:
+            db.close()
+            return reservation_pb2.CancelReservationResponse(message="No reservation found.")
+
+        except ValueError:
+            db.close()
+            return reservation_pb2.CancelReservationResponse(message="No reservation found.")
+
+        ## Verify that user has reservation match
+        cmd = '''SELECT FK_TimeSlotID FROM Reservation WHERE FK_UserID = ? AND ReservationID = ?;'''
+        try:
+            cur.execute(cmd, (uid, rid,))
+            reserv = cur.fetchone()
+
+            tsid = int(reserv[0])
+        except sq.OperationalError as e:
+            print("SQLITE operational error: ",e)
+            db.close()
+            return reservation_pb2.CancelReservationResponse(message="No reservation found.")
+        except IndexError:
+            print("Parse index error.")
+            return reservation_pb2.CancelReservationResponse(message="No reservation found.")
+        except ValueError:
+            print("ValueError in cancelling reservation")
+            db.close()
+            return reservation_pb2.CancelReservationResponse(message="No reservation found.")
+        except TypeError:
+            print("TypeError in cancelling reservation")
+            db.close()
+            return reservation_pb2.CancelReservationResponse(message="No reservation found.")
+
+        try:
+            cmd = '''UPDATE TimeSlot SET isAvailable = True WHERE TimeSlotID = ?;'''
+            cur.execute(cmd, (tsid,))
+            cmd = '''DELETE FROM Reservation WHERE ReservationID = ?;'''
+            cur.execute(cmd, (rid,))
+            db.commit()
+        except sq.OperationalError as e:
+            print("Update and delete error: ", e)
+            db.rollback()
+            db.close()
+            return reservation_pb2.CancelReservationResponse(message="No reservation found.")
+
+        db.close()
         return reservation_pb2.CancelReservationResponse(message="Successfully removed reservation")
 
 
