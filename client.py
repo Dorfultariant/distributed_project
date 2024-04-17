@@ -49,6 +49,7 @@ def printReservations(reservations):
         print(f"Date: {D}")
         print(f"Time: {T}")
         print()
+        
     return True
 
 
