@@ -37,7 +37,7 @@ def checkReservations(stub, userName, token, metadata):
 
 def printReservations(reservations):
     if not reservations:
-        print("No reservations found")
+        print("\nNo reservations found.")
         return False
 
     print("\n### Found reservations ###")
@@ -54,20 +54,22 @@ def printReservations(reservations):
 
 def cancelReservation(stub, userName, token, metadata):
     reservations = checkReservations(stub, userName, token, metadata)
-    size = len(reservations)
     printReservations(reservations)
-
+    if len(reservations) <= 0:
+        return False
     print("### Cancel Reservation ###")
-    id = input("Give number to cancel (ex. 2): ")
+    id = input("Give ID to cancel (ex. 2): ")
     try:
         id = int(id) - 1
-    except ValueError:
-        print("Incorrect indice")
+    except ValueError as e:
+        print("Incorrect indice: ", e)
         return False
-    if id < 0 or id >= size:
+    if id <= 0:
         print("No Reservation ID found")
         return False
 
+    response = stub.CancelReservation(reservation_pb2.CancelReservationRequest(username=userName, reservation_id=str(id), token=token), metadata=metadata)
+    print(response.message)
 
     return True
 
@@ -129,11 +131,13 @@ def printAvailableReservationInfo(stub, username, token, metadata):
     slot = -1
     while(slot != 0):
         slot = input("Select timeslot to reserve (ex. 1): ")
+        
         try:
             slot = int(slot)
-        except ValueError:
-            print("Not correct")
+        except ValueError as e:
+            print("Not correct: ", e)
             continue
+        
         slot -= 1
         if slot >= len(freeList) or slot < 0:
             print("Incorrect slot")
@@ -143,16 +147,19 @@ def printAvailableReservationInfo(stub, username, token, metadata):
 
     time = str(freeList[int(slot)])
     print("Selected 1 hour timeslot:", time)
-
-    response = stub.MakeReservation(reservation_pb2.MakeReservationRequest(username=username, room=selectedRoom, date=date, timeslot=time, token=token), metadata=metadata)
-
+    
+    try:
+        response = stub.MakeReservation(reservation_pb2.MakeReservationRequest(username=username, room=selectedRoom, date=date, timeslot=time, token=token), metadata=metadata)
+    except grpc.RpcError as e:
+        print("Error making reservation: ",e.code(), e.details())
+        
     if not response.isSuccessful:
         print(response.message)
         ### TODO: ALLOW USER TO TRY TO SELECT NEW SLOT
         return False
     print(response.message)
 
-    print("Receipt:")
+    print("Receipt: ")
     print(f"Reserved {selectedRoom} for 1 Hour \non {date} at {time} o'clock.")
     return True
 
@@ -261,11 +268,12 @@ def run():
                 print("Reservation Done")
 
             elif (userInput == "2"):
-                pass
+                cancelReservation(stub, userName, sessionToken, metadata)
 
             elif (userInput == "3"):
                 res = checkReservations(stub, userName, sessionToken, metadata)
                 printReservations(res)
+
             elif (userInput == "0"):
                 try:
                     response = stub.Logout(reservation_pb2.LogoutRequest(username=userName, token=sessionToken), metadata=metadata)
