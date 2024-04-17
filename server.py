@@ -353,13 +353,21 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
 
 
     def CancelReservation(self, request, context):
-        db, cur = initConnection()
-        uname = request.username
-        rid = request.reservation_id
-        ## Fetch userid from db
-        cmd = '''SELECT UserID FROM Member WHERE UserName = ?;'''
-        cur.execute(cmd, (uname,))
-        uid = cur.fetchone()
+        try:
+            db, cur = initConnection()
+            uname = request.username
+            rid = request.reservation_id
+            ## Fetch userid from db
+        except Exception as e:
+            print("Error getting information from server: ",e)
+        try:
+            cmd = '''SELECT UserID FROM Member WHERE UserName = ?;'''
+            cur.execute(cmd, (uname,))
+            uid = cur.fetchone()
+            
+        except Exception as e:
+            print("Error getting username from database: ",e)
+        
         try:
             uid = uid[0]
             rid = int(rid)
