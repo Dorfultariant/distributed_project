@@ -108,7 +108,7 @@ NOTE: TOKEN GENERATION AND VERIFICATION FUNCTIONS FOR USER SESSION AUTHENTICATIO
 def generate_token(username):
     pl = {
         "username": username,
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
     }
     try:
         token = jwt.encode(pl, _SECRET_KEY, algorithm="HS256")
@@ -174,6 +174,13 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
             print("Error connecting to server")
         uName = request.username
         name = request.name
+        password = request.password
+
+        if len(uName) < 1 or len(name) < 1 or len(password) < 1:
+            return reservation_pb2.CreateAccountResponse(
+                message="Credentials are too short.",
+                token=None
+            )
 
         ### CHECKING WHETHER USER ALREADY EXISTS IN DATABASE
         cmd = "SELECT username FROM Member WHERE username = ?;"
@@ -187,8 +194,8 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
         except Exception as e:
             print("Error while generating new token")  
             
-        try:  
-            salt, hashPasswd = hash_passwd(request.password)
+        try:
+            salt, hashPasswd = hash_passwd(password)
         except Exception as e:
             print("Error while generating new salt and hassPasswd")
             
@@ -219,10 +226,8 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
         uPass = request.password
 
         cmd = "SELECT * FROM Member WHERE username = ?;"
-        try:
-            db, cur = initConnection()
-        except Exception as e:
-            print("Error connecting to server")
+        db, cur = initConnection()
+
         info = []
         try:
             cur.execute(cmd, (uName,))
@@ -248,6 +253,7 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
 
     def Logout(self, request, context):
         uName = request.username
+
         try:
             db, cur = initConnection()
         except Exception as e:
@@ -258,9 +264,7 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
             if not cur.fetchall():
                 db.close()
                 return reservation_pb2.LogoutResponse(message="User not found from database", token=request.token)
-            if not verify_token(request.token):
-                db.close()
-                return reservation_pb2.LogoutResponse(message="Token is invalid...", token=request.token)
+
         except sq.Error as e:
             print("\nSQLITE error in Logout:\n ", e)
 
