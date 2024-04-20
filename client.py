@@ -5,7 +5,7 @@ import reservation_pb2_grpc
 from datetime import datetime as dt
 import getpass
 
-def loginMenu():
+def printLoginMenu():
     print()
     print("###### WELCOME ######")
     print("[1] Create Account")
@@ -22,18 +22,29 @@ def mainMenu():
     print("[0] Logout")
     return input("Option: ")
 
+# Function used to fetch data from server
+# @param stub for method call
+# @param username to connect find user information
+# @param token for verification
+# @param metadata (including token) used for authenctication
+# @return list of reservations
+
 def checkReservations(stub, userName, token, metadata):
     try:
         response = stub.ViewReservations(reservation_pb2.ViewReservationsRequest(username=userName, token=token), metadata=metadata)
 
     except grpc.RpcError as e:
         print("Could not fetch data from server: ", e)
-        return []
+        return None
 
     reservations = response.reservations.split("\n")
     parsed = [ r.split(';') for r in reservations if r ]
     return parsed
 
+
+# Function used to print reservations from list
+# @param List of reservations to be printed
+# @return BOOLEAN for success or fail
 
 def printReservations(reservations):
     if not reservations:
@@ -52,121 +63,229 @@ def printReservations(reservations):
         
     return True
 
+# Function used to cancel specific reservation from user
+# @param stub for method call
+# @param username to connect find user information
+# @param token for verification
+# @param metadata (including token) used for authenctication
+# @return BOOLEAN for success or fail
 
 def cancelReservation(stub, userName, token, metadata):
-    try:
-        reservations = checkReservations(stub, userName, token, metadata)
-    except Exception as e:
-        print("Error getting reservations: ", e)
-    
+    reservations = checkReservations(stub, userName, token, metadata)
+    if not reservations:
+        print("\nNo reservations to cancel.")
+        return False
+
     printReservations(reservations)
     if len(reservations) <= 0:
         return False
     print("### Cancel Reservation ###")
-    id = input("Give ID to cancel (ex. 2): ")
+    id = input("Give ID to cancel (ex. 2) (0 to exit): ")
     try:
         id = int(id)
-    except ValueError as e:
-        print("Incorrect indice: ", e)
+    except ValueError:
+        print("Incorrect indice.")
         return False
 
     if id <= 0:
-        print("Invalid reservation ID")
+        print("Exiting")
         return False
-
-    response = stub.CancelReservation(reservation_pb2.CancelReservationRequest(username=userName, reservation_id=str(id), token=token), metadata=metadata)
-    print(response.message)
+    try:
+        response = stub.CancelReservation(reservation_pb2.CancelReservationRequest(username=userName, reservation_id=str(id), token=token), metadata=metadata)
+        print(response.message)
+    except grpc.RpcError:
+        print("Could not fetch data from server")
+        return False
 
     return True
 
-def printAvailableReservationInfo(stub, username, token, metadata):
-    try: 
+# Function for fetching available rooms
+# @param stub for method call
+# @param username to connect find user information
+# @param token for verification
+# @param metadata (including token) used for authenctication
+# @return list of rooms
+
+def fetchRooms(stub, username, token, metadata):
+    try:
         responses = stub.FetchRooms(reservation_pb2.FetchRoomsRequest(token=token), metadata=metadata)
-    except grpc.RpcError as e:
-        print("gRPC error:", e.code(), e.details())
-    i = 1
-    roomList = []
-    print("Available rooms:")
+    except grpc.RpcError:
+        print("\nCould not fetch available rooms.\n")
+        return []
+    rooms = []
     for res in responses:
-        print(f"[{i}] {res.rooms}")
-        roomList.append(res.rooms)
-        i+=1
-    room = input("Reserve room by number (ex. 2): ")
+        rooms.append(res.rooms)
+    return rooms
+
+
+# Function for getting date from user
+# @param None
+# @return date or None
+
+def getADate():
     date = input("Choose date (YYYY-MM-DD): ")
     try:
-        room = int(room)
-    except ValueError:
-        print("Invalid room number")
-        return False
-    room -= 1
-
-    if room > len(roomList):
-        print("Invalid room number")
-        return False
-
-    if len(date) < 1:
-        print("Invalid Date")
-        return
-    try:
         dt.strptime(date, "%Y-%m-%d")
-    except ValueError as e:
-        print("Incorrect date format, should be YYYY-MM-DD", e)
-        return False
+    except ValueError:
+        print("\nIncorrect date format, should be YYYY-MM-DD")
+        return None
+    return date
 
-    selectedRoom = roomList[room][0]
 
+# Function for getting room index from user
+# @param id limit
+# @return room idx or None (-1 for exit)
+
+def getARoom(maxs):
+    room_idx = input("\nReserve room by number (ex. 2) (0 to exit): ")
     try:
-        responses = stub.FetchAvailableSlots(reservation_pb2.FetchAvailableSlotsRequest(room=selectedRoom, date=date, token=token), metadata=metadata)
-    
-    except grpc.RpcError as e:
-        print("Error when fetching available slots: ")
-        
-    if responses == None:
-        print("Responses is None")
-    
-    i = 1
-    freeList = []
-    print("### Free Slots ###")
-        
+        room_idx = int(room_idx) - 1
+    except ValueError:
+        print("\nInvalid room number\n")
+        return None
+    if room_idx == -1:
+        return room_idx
+    if room_idx > maxs or room_idx < 0:
+        print("\nInvalid room number\n")
+        return None
+    return room_idx
+
+
+# Function for fetching available timeslots
+# @param stub for method call
+# @param room (name: string)
+# @param date (date: string)
+# @param token for verification
+# @param metadata (including token) used for authenctication
+# @return list of free timeslots for a given room and date or None
+
+def fetchFreeTimeslots(stub, room, date, token, metadata):
+    try:
+        responses = stub.FetchAvailableSlots(reservation_pb2.FetchAvailableSlotsRequest(
+            room=room,
+            date=date,
+            token=token),
+        metadata=metadata
+    )
+    except grpc.RpcError:
+        print("\nError when fetching available slots.\n")
+        return None
+
+    freeslots = []
     for res in responses:
-        for c in res.slots:
-            print(f"[{i}]:", c)
-            freeList.append(c)
-            i+=1
-    slot = -1
-    while(slot != 0):
-        slot = input("Select timeslot to reserve (ex. 1): ")
-        
-        try:
-            slot = int(slot)
-        except ValueError as e:
-            print("Not correct: ", e)
-            continue
-        
-        slot -= 1
-        if slot >= len(freeList) or slot < 0:
-            print("Incorrect slot")
-            slot = -1
-            continue
-        break
+        for slot in res.slots:
+            freeslots.append(slot)
+    return freeslots
 
-    time = str(freeList[int(slot)])
-    print("Selected 1 hour timeslot:", time)
-    
+
+# Function for making a reservation request
+# @param stub for method call
+# @param username to make reservation for correct user
+# @param room (name: string)
+# @param date (date: string)
+# @param timeslot (time: string)
+# @param token for verification
+# @param metadata (including token) used for authenctication
+# @return BOOLEAN for success or fail
+
+def makeReservation(stub, username, room, date, timeslot, token, metadata):
     try:
-        response = stub.MakeReservation(reservation_pb2.MakeReservationRequest(username=username, room=selectedRoom, date=date, timeslot=time, token=token), metadata=metadata)
+        response = stub.MakeReservation(reservation_pb2.MakeReservationRequest(
+            username=username,
+            room=room,
+            date=date,
+            timeslot=timeslot,
+            token=token ),
+        metadata=metadata
+    )
     except grpc.RpcError as e:
         print("Error making reservation: ",e.code(), e.details())
-        
-    if not response.isSuccessful:
-        print(response.message)
-        ### TODO: ALLOW USER TO TRY TO SELECT NEW SLOT
-        return False
-    print(response.message)
 
-    print("Receipt: ")
-    print(f"Reserved {selectedRoom} for 1 Hour \non {date} at {time} o'clock.")
+    if not response.isSuccessful:
+        print()
+        print(response.message)
+        return False
+    print()
+    print(response.message)
     return True
+
+
+# Function used to run reservation loop
+# and make calls to support functions
+# @param stub for method call
+# @param username to connect find user information
+# @param token for verification
+# @param metadata (including token) used for authenctication
+# @return BOOLEAN for success or fail
+
+def reservationSystem(stub, username, token, metadata):
+
+    while(True):
+        rooms = fetchRooms(stub, username, token, metadata)
+        if rooms == None:
+            print("\nNo rooms to reserve.\n")
+            return False
+
+        print("\nAvailable rooms:")
+        for i, room in enumerate(rooms, 1):
+            print(f"[{i}]: {room}")
+
+        room_idx = getARoom(len(rooms))
+        if room_idx == None:
+            continue
+        if room_idx == -1:
+            print("\nExiting.\n")
+            return False
+
+        date = getADate()
+        if date == None:
+            continue
+
+        selectedRoom = rooms[room_idx][0]
+
+        freeSlots = fetchFreeTimeslots(stub, selectedRoom, date, token, metadata)
+        if not freeSlots:
+            print("\nNo free slots available for this room on selected date.\n")
+            if input("Try again (y/n): ").lower() == "n":
+                return False
+            continue
+
+        print("### Free Slots ###")
+        for i, slot in enumerate(freeSlots, 1):
+            print(f"[{i}]: {slot}")
+
+        slot_idx = input("\nSelect timeslot to reserve (ex. 1) (0 to exit): ")
+        
+        try:
+            slot_idx = int(slot_idx) - 1
+        except ValueError:
+            print("\nIncorrect slot number.\n")
+            continue
+        if slot_idx == -1:
+            print("\nExiting")
+            return False
+        if slot_idx >= len(freeSlots) or slot_idx < 0:
+            print("\nIncorrect slot number.\n")
+            continue
+
+        time = str(freeSlots[slot_idx])
+        print("\nYou have selected a 1-hour timeslot at", time, "o'clock.")
+        if input("continue with reservation (y/n): ").lower() == "n":
+            return False
+
+        if makeReservation(stub, username, selectedRoom, date, time, token, metadata):
+            print("\nReceipt: ")
+            print(f"Reserved {selectedRoom} for 1 Hour.")
+            print(f"Timeslot: {date} at {time} o'clock.")
+            break
+        else:
+            print("Could not make reservation, try again.")
+
+    return True
+
+# Function for pinging server and ensuring that connection has been established
+# @param stub for method call
+# @return BOOLEAN for success or fail
 
 def pingServer(stub):
     try:
@@ -181,6 +300,10 @@ def pingServer(stub):
         print(response.ping)
     return True
 
+# Function to handle user input for creating account
+# @param None
+# @return username, name, password or empty string
+
 def createAccountMenu():
     print("#### Create Account ####")
     username = input("Give username: ")
@@ -190,48 +313,157 @@ def createAccountMenu():
         password = getpass.getpass("New password: ")
     except Exception as e:
         print("Error getting user password")
-        return None
+        return "", "", ""
+
     try:
         verifyPassword = getpass.getpass("Verify password: ")
     except Exception as e:
         print("Error verifying password")
-        return None
+        return "", "", ""
+
     if len(password) < 1 or len(verifyPassword) < 1:
         print("Password can not be empty.")
+        return "", "", ""
 
     if password != verifyPassword:
         print("Passwords do not match.")
-        return None
+        return "", "", ""
 
-    if input("Confirm [y/n]: ").lower() == "n":
-        return None
-    return username, name, password
+    if input("Confirm [y/n]: ").lower() == "y":
+        return str(username), str(name), str(password)
+
+    return "", "", ""
+
+# Function for createAccountRequest and handle errors:
+# @param stub for method call
+# @param username for account
+# @param name for account
+# @param password for authentication
+# @return response for success or None
 
 def createAccountRequest(stub, username, name, password):
     try:
-        response = stub.CreateAccount(reservation_pb2.CreateAccountRequest(username=str(username), name=str(name), password=str(password)))
+        response = stub.CreateAccount(reservation_pb2.CreateAccountRequest(
+            username=username,
+            name=name,
+            password=password)
+        )
     except grpc.RpcError as e:
         print("gRPC error when creating account request:", e.code(), e.details())
         return None
     except Exception as e:
         print("Unexpected error when creating account:", e)
         return None
+
     if response == None:
-        print("Account creation failed, response is None")
+        print("Account creation failed, server did not respond")
         return None
+
     if response.token == None:
-        print("Account creation failed, response.token is None")
+        print(response.message)
         return None
-    print("Response.message: ",response.message)
+
+    print(response.message)
     return response
 
+# Function to get user login credentials:
+# @param None
+# @return username, password or empty string
+
+def loginMenu():
+    print("#### Login ####")
+    username = input("Give username: ")
+    try:
+        password = getpass.getpass("Password: ")
+    except Exception as e:
+        print("Error while getting password")
+        return "", ""
+    return str(username), str(password)
+
+
+# Function to make the login request:
+# @param stub for server method
+# @param username string
+# @param password string
+# @return token or None
+
+def loginRequest(stub, username, password):
+    try:
+        response = stub.Login(reservation_pb2.LoginRequest(
+            username=username,
+            password=password)
+        )
+
+    except grpc.RpcError as e:
+        print("Error while getting login response.", e.code(), e.details())
+        return None
+
+    if not response.isValid:
+        print(response.message)
+        return None
+
+    print()
+    print(response.message)
+    return response.token
+
+
+# Function for handling login and account creation logic
+#   and function calls
+# @param stub for server method
+# @return username, token or empty string, None for exit
+
+def loginSystem(stub):
+    inp = printLoginMenu()
+    if inp == "0":
+        return None, None
+
+    username = None
+    token = None
+
+    if (inp == "1"):
+        username, name, password = createAccountMenu()
+        if len(username) < 1 or len(password) < 1 or len(name) < 1:
+            return "", ""
+        response = createAccountRequest(stub, username, name, password)
+        if response == None:
+            return "", ""
+        if len(response.token) < 1:
+            return "", ""
+        token = response.token
+
+
+    elif (inp == "2"):
+        username, password = loginMenu()
+        if len(username) < 1 or len(password) < 1:
+            return "", ""
+
+        if input("Confirm (y/n): ").lower() == "n":
+            return "", ""
+
+        token = loginRequest(stub, username, password)
+        if token is None:
+            return "", ""
+    else:
+        return "", ""
+
+    return username, token
+
+
+# ### MAIN FUNCTION ###
+# Handles main logic structure of the clientside program
+# @param None
+# @return None
+
 def run():
+    ## Certification to verify server-client connection
     rootCertificates = open("ca.pem", "rb").read()
     try:
         channelCredentials = grpc.ssl_channel_credentials(rootCertificates)
     except grpc.RpcError as e:
         print("gRPC error when getting channel credentials:", e.code(), e.details())
-        
+
+    ## Connection to server at host: localhost port: 44000 as the application is tested
+    ##  on localhost network
     with grpc.secure_channel("localhost:44000", channelCredentials) as channel:
         stub = reservation_pb2_grpc.ReservationServiceStub(channel)
         # TEST PING TO SERVER
@@ -245,61 +477,36 @@ def run():
 
         metadata = []
 
+        # ### Main loop ###
         while (userInput != "0"):
 
-            if (sessionToken == None):
-                inp = loginMenu()
-                if inp == "0": break
+            ## User authenctication
+            if (sessionToken == None or len(sessionToken) < 1):
+                userName, sessionToken = loginSystem(stub)
+                if userName is None or sessionToken is None:
+                    break
+                if len(userName) > 0 and len(sessionToken) > 0:
+                    metadata.append(("token", sessionToken))
+                continue
 
-                if (inp == "1"):
-                    while (1):
-                        userName, name, uPass = createAccountMenu()
-                        if userName == None:
-                            continue
-                        response = createAccountRequest(stub, userName, name, uPass)
-                        if response == None:
-                            continue
-                        metadata.append(("token", response.token))
-                        sessionToken = response.token
-                        break
-
-                elif (inp == "2"):
-                    while (1):
-                        print("#### Login ####")
-                        userName = input("Give username: ")
-                        try:
-                            uPass = getpass.getpass("Password: ")
-                        except Exception as e:
-                            print("Error while getting password")
-                        try:
-                            response = stub.Login(reservation_pb2.LoginRequest(username=userName, password=uPass))
-                        except grpc.RpcError as e:
-                            print("Error while getting login request", e.code(), e.details())
-                        if not response.isValid:
-                            print("server's response: ",response.message)
-                            continue
-                        else:
-                            print("Response message from server: ", response.message)
-                            metadata.append(("token", response.token))
-                            sessionToken = response.token
-                        break
-                else:
-                    continue
-
+            ## Program main menu ##
             userInput = mainMenu()
 
+            ## Making reservation
             if (userInput == "1"):
-                if not printAvailableReservationInfo(stub, userName, sessionToken, metadata):
-                    print("Something did not go as planned")
-                print("Reservation Done")
+                if reservationSystem(stub, userName, sessionToken, metadata):
+                    print("Reservation Done")
 
+            ## Cancelling reservation
             elif (userInput == "2"):
                 cancelReservation(stub, userName, sessionToken, metadata)
 
+            ## Viewing existing reservations
             elif (userInput == "3"):
                 res = checkReservations(stub, userName, sessionToken, metadata)
                 printReservations(res)
 
+            ## Logging out
             elif (userInput == "0"):
                 try:
                     response = stub.Logout(reservation_pb2.LogoutRequest(username=userName, token=sessionToken), metadata=metadata)
