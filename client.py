@@ -5,9 +5,25 @@ import reservation_pb2_grpc
 from datetime import datetime as dt
 import getpass
 
+def print_banner():
+    date = dt.now().strftime('%Y-%m-%d %H:%M:%S')
+    print("========================================")
+    print("||    ########## WELCOME ##########   ||")
+    print("||    This is a Reservation System    ||")
+    print("||                                    ||")
+    print("||          Creators:                 ||")
+    print("||          - Teemu Hiltunen          ||")
+    print("||          - Antti Kukkonen          ||")
+    print("||          - Iiro  Pitkänen          ||")
+    print("||                                    ||")
+    print("||       Current date and time:       ||")
+    print("||        " + date +       "         ||")
+    print("========================================")
+
+
 def printLoginMenu():
     print()
-    print("###### WELCOME ######")
+    print("###### AUTHENTICATION ######")
     print("[1] Create Account")
     print("[2] Login to Existing")
     print("[0] Exit")
@@ -246,7 +262,7 @@ def reservationSystem(stub, username, token, metadata):
         freeSlots = fetchFreeTimeslots(stub, selectedRoom, date, token, metadata)
         if not freeSlots:
             print("\nNo free slots available for this room on selected date.\n")
-            if input("Try again (y/n): ").lower() == "n":
+            if input("\nTry again (y/n): ").lower() == "n":
                 return False
             continue
 
@@ -270,7 +286,7 @@ def reservationSystem(stub, username, token, metadata):
 
         time = str(freeSlots[slot_idx])
         print("\nYou have selected a 1-hour timeslot at", time, "o'clock.")
-        if input("continue with reservation (y/n): ").lower() == "n":
+        if input("\nContinue with reservation (y/n): ").lower() == "n":
             return False
 
         if makeReservation(stub, username, selectedRoom, date, time, token, metadata):
@@ -291,13 +307,15 @@ def pingServer(stub):
     try:
         response = stub.PingServer(reservation_pb2.PingServerRequest(ping="Gib ping"))
     except grpc.RpcError as e:
-        print("gRPC error when pingin server:", e.code(), e.details())
+        print("Could not connect to Server:", e.details())
         return False
     except Exception as e:
         print("Unexpected error:", e)
         return False
     if response.isPinging:
+        print()
         print(response.ping)
+        print()
     return True
 
 # Function to handle user input for creating account
@@ -318,18 +336,18 @@ def createAccountMenu():
     try:
         verifyPassword = getpass.getpass("Verify password: ")
     except Exception as e:
-        print("Error verifying password")
+        print("\nError verifying password")
         return "", "", ""
 
     if len(password) < 1 or len(verifyPassword) < 1:
-        print("Password can not be empty.")
+        print("\nPassword can not be empty.")
         return "", "", ""
 
     if password != verifyPassword:
-        print("Passwords do not match.")
+        print("\nPasswords do not match.")
         return "", "", ""
 
-    if input("Confirm [y/n]: ").lower() == "y":
+    if input("\nConfirm [y/n]: ").lower() == "y":
         return str(username), str(name), str(password)
 
     return "", "", ""
@@ -363,6 +381,7 @@ def createAccountRequest(stub, username, name, password):
         print(response.message)
         return None
 
+    print()
     print(response.message)
     return response
 
@@ -437,7 +456,7 @@ def loginSystem(stub):
         if len(username) < 1 or len(password) < 1:
             return "", ""
 
-        if input("Confirm (y/n): ").lower() == "n":
+        if input("\nConfirm (y/n): ").lower() == "n":
             return "", ""
 
         token = loginRequest(stub, username, password)
@@ -476,6 +495,8 @@ def run():
         response = None
 
         metadata = []
+        print_banner()
+
 
         # ### Main loop ###
         while (userInput != "0"):
@@ -510,12 +531,17 @@ def run():
             elif (userInput == "0"):
                 try:
                     response = stub.Logout(reservation_pb2.LogoutRequest(username=userName, token=sessionToken), metadata=metadata)
+                    print()
                     print(response.message)
-                except grpc.RpcError as e:
-                    print("Grpc Error when logging out:", e.code(), e.details())
+                # If exception occurs, the client will still be stopped
+                except grpc.RpcError:
+                    pass
+                print()
+                print("Bye bye!")
+                print()
                 break
             else:
-                print("Unknown selection")
+                print("Unknown selection...")
                 continue
 
 
