@@ -13,6 +13,7 @@ import hashlib
 import sqlite3 as sq
 import datetime
 import os
+import sys
 
 
 ## Connects username to their access token
@@ -22,6 +23,12 @@ loggedUsers = {
 # Initialization and database files
 dbInitFile = "db_init.sql"
 dbFile = "main.db"
+
+## This is defined in the certificate, so this is currently hard coded
+HOST = "localhost"
+## Port can be changed, this is just default
+PORT = 44000
+
 
 """
 WARNING: CHANGE SECRETS AND MOVE TO ENVIRONMENT VARIABLES
@@ -606,7 +613,7 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
     Server serve method which creates the server verification and SSL / TLS connection
         to create an encrypted channel between connecting clients via CA certificates.
 
-    Opens server in localhost to port 44000.
+    Opens server by default in localhost to port 44000.
 """
 def serve():
     try:
@@ -615,8 +622,9 @@ def serve():
             interceptors=(AuthenticationInterceptor(),),
         )
 
-        reservation_pb2_grpc.add_ReservationServiceServicer_to_server(ReservationServiceServicer(), server)
-        port = 44000
+        reservation_pb2_grpc.add_ReservationServiceServicer_to_server(
+            ReservationServiceServicer(), server)
+        #port = 44000
 
         # stores servers private key and cert
         privateKey = open("server.key", "rb").read()
@@ -627,8 +635,8 @@ def serve():
             ((privateKey, certificateChain),),
         )
 
-        server.add_secure_port("localhost:" + str(port), serverCredentials)
-        print("Server rev up on: "+  str(port))
+        server.add_secure_port(HOST + ":" + str(PORT), serverCredentials)
+        print("Server rev up on: "+  str(PORT))
         server.start()
         server.wait_for_termination()
     except Exception as e:
@@ -637,6 +645,10 @@ def serve():
 
 ## Starts server when program file is loaded.
 if __name__=="__main__":
+    ## Define server ip and port
+    if len(sys.argv) > 1:
+        if len(sys.argv[1]) > 1:
+            PORT = sys.argv[1]
     if initDB():
         serve()
 

@@ -481,9 +481,16 @@ def run():
     except grpc.RpcError as e:
         print("gRPC error when getting channel credentials:", e.code(), e.details())
 
+    host = "localhost"
+    port = input("Give connection port (enter to use default): ")
+    ## Uses default port of server
+    port.replace(" ", "")
+    if port == "":
+        port = 44000
+
     ## Connection to server at host: localhost port: 44000 as the application is tested
     ##  on localhost network
-    with grpc.secure_channel("localhost:44000", channelCredentials) as channel:
+    with grpc.secure_channel(f"{host}:{port}", channelCredentials) as channel:
         stub = reservation_pb2_grpc.ReservationServiceStub(channel)
         # TEST PING TO SERVER
         if not pingServer(stub):
