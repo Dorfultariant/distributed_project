@@ -19,10 +19,24 @@ import os
 loggedUsers = {
 }
 
-
+# Initialization and database files
 dbInitFile = "db_init.sql"
 dbFile = "main.db"
 
+"""
+WARNING: CHANGE SECRETS AND MOVE TO ENVIRONMENT VARIABLES
+"""
+_SECRET_KEY = """secret auth wallop key to be changed in the future
+                wallop if this ever sees internet. As that is very unlikely, this will
+                do just fine for this project, wallop"""
+
+"""
+Establishes a connection to the database and returns the database connection and cursor.
+
+Returns:
+    db (sqlite3.Connection): The database connection.
+    cur (sqlite3.Cursor): The database cursor.
+"""
 
 def initConnection():
     db = sq.connect(dbFile)
@@ -30,6 +44,12 @@ def initConnection():
     cur.execute("PRAGMA foreign_keys = ON;")
     return db, cur
 
+"""
+Initializes the database with basic information. This function is only executed when main.db does not exist.
+
+Returns:
+    bool: True if the database file is found or successfully created, False otherwise.
+"""
 
 def initDB():
     if os.path.isfile(dbFile):
@@ -40,8 +60,10 @@ def initDB():
     try:
         print("DB FILE NOT FOUND")
         print("Creating database")
+
         f = open(dbInitFile, "r")
         command = ""
+
         for l in f.readlines():
             command += l
         cur.executescript(command)
@@ -66,33 +88,39 @@ def initDB():
 
 
 """
-##### IF USED IN NETWORK #####
-TODO: CHANGE SECRETS AND MOVE TO ENVIRONMENT VARIABLES
+A Class for intercepting, generating and verifying user
+    request via token authentication
 """
-_SECRET_KEY = "secret auth key"
-_SECRET_SALT_SEED = 59050
 
-
-### NOTE: THIS CLASS IS FOR INTERCEPTING AND VERIFYING
-#         USER REQUESTS VIA TOKEN AUTHENTICATION:
 class AuthenticationInterceptor(grpc.ServerInterceptor):
+
+    """
+        Authenticator initialization with request exceptions to authentication
+            as token does not yet exist at those points.
+    """
     def __init__(self):
         self._exclude_methods = ["CreateAccount", "Login", "PingServer"]
         def abort(ignored_request, context):
             context.abort(grpc.StatusCode.UNAUTHENTICATED, "Invalid Signature")
         self._abort_handler = grpc.unary_unary_rpc_method_handler(abort)
 
-    def intercept_service(self, continuation, handler_call_details):
+    """
+        Verifies the token during the intercept of requests.
 
+        Parameters:
+            continuation (callable): A function that takes a HandlerCallDetails and proceeds to invoke the next interceptor in the chain, if any.
+            handler_call_details (grpc.HandlerCallDetails): A HandlerCallDetails describing the RPC.
+
+        Returns:
+            grpc.RpcMethodHandler: The handler to process the incoming RPC.
+    """
+    def intercept_service(self, continuation, handler_call_details):
         method = handler_call_details.method.split('/')[::-1][0]
-        print("Method called", method)
         if method in self._exclude_methods:
             return continuation(handler_call_details)
 
         metadata = dict(handler_call_details.invocation_metadata)
         if "token" in metadata :
-            print("\nToken to decode: ", metadata["token"])
-            print()
             try:
                 jwt.decode(metadata["token"],_SECRET_KEY, algorithms=["HS256"])
                 return continuation(handler_call_details)
@@ -102,39 +130,46 @@ class AuthenticationInterceptor(grpc.ServerInterceptor):
 
         return self._abort_handler
 
+    ### Method used to create token for user
+    ### NOTE: Token has an expiration time which is checked during intercept
+    """
+        Generates the token during account creation and login.
+
+        Parameters:
+            Username (string): Username for which the token is generated
+        Returns:
+            Token (string): Generated token
+    """
+    def generate_token(self, username):
+        pl = {
+            "username": username,
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
+        }
+        try:
+            token = jwt.encode(pl, _SECRET_KEY, algorithm="HS256")
+        except jwt.DecodeError as e:
+            print("Error while encoding jwt: ",e)
+        return token
+
+
+### NOTE: Password hashing function
 """
-NOTE: TOKEN GENERATION AND VERIFICATION FUNCTIONS FOR USER SESSION AUTHENTICATION
+    Generates salt and hashed version of user password to be stored in a database
+
+    Parameters:
+        Password (string): Users password to be hashed
+
+    Returns:
+        Salt (string): For the password
+        Hash (string): Salt + password hash
 """
-def generate_token(username):
-    pl = {
-        "username": username,
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
-    }
-    try:
-        token = jwt.encode(pl, _SECRET_KEY, algorithm="HS256")
-    except jwt.DecodeError as e:
-        print("Error while encoding jwt: ",e)
-    return token
 
-### THIS FUNCTION IS NOT ABSOLUTELY NECESSARY
-### AS VERIFICATION IS MOVED TO AuthenticationInterceptor CLASS
-def verify_token(token):
+def hashPasswd(passwd):
+    salt = None
+    key = None
     try:
-        payload = jwt.decode(
-            token,
-            key=_SECRET_KEY,
-            algorithms=["HS256"],
-        )
-        return True
-    except jwt.ExpiredSignatureError as e:
-        print(e)
-    return False
-
-
-### NOTE: PASSWORD HASHING FOR DATABASE STORAGE
-def hash_passwd(passwd):
-    try:
-        salt = os.urandom(_SECRET_SALT_SEED)
+        # Generates 16 bytes of random data as salt for each user
+        salt = os.urandom(32)
     
         key = hashlib.pbkdf2_hmac(
         'sha256',
@@ -144,11 +179,21 @@ def hash_passwd(passwd):
     )
     except Exception as e:
         print("error while hashing or salting key: ",e)
-        
     return salt, key
 
+"""
+    Verifies user password based on their salt and given password
 
-def verify_passwd(salt, key, passwd):
+    Parameters:
+        Salt (string): Salt from database matching username
+        Key (string): Hash from database matching username
+        Password (string): Given by the user during login
+    Returns:
+        Bool: True if keys match, False otherwise
+"""
+
+def verifyPasswd(salt, key, passwd):
+    newKey = None
     try:
         newKey = hashlib.pbkdf2_hmac(
             "sha256",
@@ -161,20 +206,39 @@ def verify_passwd(salt, key, passwd):
     return key == newKey
 
 
-class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer):
+"""
+    Main Reservation Class that handles main logic of services this application provides
 
+    All methods generated with .proto file are implemented here.
+"""
+
+class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer):
+    ## Interceptor for handling user authentications
+    def __init__(self):
+        self._auth_intrcptr = AuthenticationInterceptor()
+
+    ## Testing connection between server and client
     def PingServer(self, request, context):
         return reservation_pb2.PingServerResponse(ping="Server reached", isPinging=True)
 
+    """
+        Method for creating a new user and adding them to the database.
+
+        Parameters:
+            Request (Request Object): Containing information sent by client
+            Context (Context Object): Additional configuration information
+        Returns:
+            Response (Response Object): Object containing message and token
+    """
     def CreateAccount(self, request, context):
         ### FOR EACH USER // REQUEST, A NEW CUR AND DB ARE CREATED TO ACCESS DATABASE
         try:
             db, cur = initConnection()
         except Exception as e:
             print("Error connecting to server")
-        uName = request.username
-        name = request.name
-        password = request.password
+        uName = str(request.username)
+        name = str(request.name)
+        password = str(request.password)
 
         if len(uName) < 1 or len(name) < 1 or len(password) < 1:
             return reservation_pb2.CreateAccountResponse(
@@ -186,27 +250,19 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
         cmd = "SELECT username FROM Member WHERE username = ?;"
         cur.execute(cmd, (uName,))
         if cur.fetchall():
-            return reservation_pb2.CreateAccountResponse(message="User already exists", token=None)
+            return reservation_pb2.CreateAccountResponse(
+                message="User already exists", token=None
+            )
 
         ### IF NOT THEN WE CAN MOVE ON
-        try:
-            newToken = generate_token(uName)
-        except Exception as e:
-            print("Error while generating new token")  
-            
-        try:
-            salt, hashPasswd = hash_passwd(password)
-        except Exception as e:
-            print("Error while generating new salt and hassPasswd")
-            
-        print()
-        print("Generated token: ", newToken)
-        print()
+        newToken = self._auth_intrcptr.generate_token(uName)
+
+        salt, hashedPasswd = hashPasswd(password)
 
         cmd = "INSERT INTO Member (USERNAME, NAME, PASSWORD, SALT) VALUES (?, ?, ?, ?);"
 
         try:
-            cur.execute(cmd, (uName, name, hashPasswd, salt,))
+            cur.execute(cmd, (uName, name, hashedPasswd, salt,))
 
             db.commit()
             db.close()
@@ -220,7 +276,16 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
         loggedUsers[uName] = newToken
         return reservation_pb2.CreateAccountResponse(message="User added successfully", token=newToken)
 
+    """
+        Method for logging in a user based on their given credentials and
+            data found from database.
 
+        Parameters:
+            Request (Request Object): Containing information sent by client
+            Context (Context Object): Additional configuration information
+        Returns:
+            Response (Response Object): Object containing message and token
+    """
     def Login(self, request, context):
         uName = request.username
         uPass = request.password
@@ -233,23 +298,34 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
             cur.execute(cmd, (uName,))
             info = cur.fetchone()
             db.close()
+            if info is None:
+                return reservation_pb2.LoginResponse(
+                    message="User not found.", isValid=False, token=None)
+
 
         except sq.Error as e:
             print("User not found:", e)
             db.close()
             return reservation_pb2.LoginResponse(message="Incorrect credentials", isValid=False, token=None)
 
-        if not verify_passwd(info[4], info[3], uPass):
+        if not verifyPasswd(info[4], info[3], uPass):
             print("User password was incorrect")
             return reservation_pb2.LoginResponse(message="Incorrect credentials", isValid=False, token=None)
 
-        newToken = generate_token(uName)
+        newToken = self._auth_intrcptr.generate_token(uName)
         loggedUsers[uName] = newToken
-        print()
-        print("Generated token: ", newToken)
-        print()
         return reservation_pb2.LoginResponse(message="Successful Login", isValid=True, token=newToken)
 
+    """
+        Method for logging out a user based on their given token and
+            data found from database.
+
+        Parameters:
+            Request (Request Object): Containing information sent by client
+            Context (Context Object): Additional configuration information
+        Returns:
+            Response (Response Object): Object containing message and token (None)
+    """
 
     def Logout(self, request, context):
         uName = request.username
@@ -263,15 +339,25 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
             cur.execute(cmd, (uName,))
             if not cur.fetchall():
                 db.close()
-                return reservation_pb2.LogoutResponse(message="User not found from database", token=request.token)
+                return reservation_pb2.LogoutResponse(
+                    message="User not found from database",
+                    token=request.token)
 
         except sq.Error as e:
             print("\nSQLITE error in Logout:\n ", e)
 
         loggedUsers.pop(uName)
-
         return reservation_pb2.LogoutResponse(message="Successful Logout", token=None)
 
+    """
+        Method for fetching available rooms for the client from database.
+
+        Parameters:
+            Request (Request Object): Containing information sent by client
+            Context (Context Object): Additional configuration information
+        Returns:
+            Response (Response Object): Stream of rooms
+    """
     def FetchRooms(self, request, context):
         try:
             db, cur = initConnection()
@@ -295,6 +381,16 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
             return reservation_pb2.FetchRoomsResponse(rooms=None)
         finally:
             db.close()
+    """
+        Method for fetching available timeslots from the database to be sent to the
+            client as a stream.
+
+        Parameters:
+            Request (Request Object): Containing information sent by client
+            Context (Context Object): Additional configuration information
+        Returns:
+            Response (Response Object): Stream of messages and timeslots
+    """
 
     def FetchAvailableSlots(self, request, context):
         
@@ -314,10 +410,18 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
         except Exception as e:
             print("Error fetching slots: ", e)
 
+    """
+        Method for making reservation for a user if the slot is still available.
+
+        Parameters:
+            Request (Request Object): Containing information sent by client
+            Context (Context Object): Additional configuration information
+        Returns:
+            Response (Response Object): Object containing message and boolean indicating the
+                    success.
+    """
 
     def MakeReservation(self, request, context):
-        #Niin paljon uugabuugabuuta
-        #Kokeillaan juttuja
         try:
             uname = request.username
             room = request.room
@@ -327,7 +431,8 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
         except Exception as e:
             print("Error while getting data from request: ", e)
             print("User:",uname, " Room:", room, " Time:",timeslot, "Date:", date)
-        #print("Kokeiluprintti: User:",uname, " Room:", room, " Time:",timeslot, "Date:", date)
+            return reservation_pb2.MakeReservationResponse(
+                message="Unable to make reservation.", isSuccessful=False)
 
         db, cur = initConnection()
         
@@ -339,20 +444,33 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
             (SELECT RoomID FROM Room WHERE Name = ?), 
             (SELECT UserID FROM Member WHERE Username = ?))
             """
-        
-        # Add to database the reservation + set timeslot to reserved
-        cur.execute(cmd, (date, date, timeslot, room, room, uname))
-        #print ("Tässä työnnetään databaseen juttuja: Aika:", date, "Timeslot: ",timeslot, "Huone: ", room, "Käyttäjä: ", uname)
-        
-        cmd = '''UPDATE TimeSlot SET isAvailable = False WHERE TimeSlotID = (SELECT TimeSlotID FROM TimeSlot WHERE Date = ? AND StartTime = ? AND FK_RoomID = (SELECT RoomID FROM Room WHERE Name = ?));'''
-        cur.execute(cmd, (date, timeslot, room))
-        db.commit()
+        try:
+            # Add to database the reservation + set timeslot to reserved
+            cur.execute(cmd, (date, date, timeslot, room, room, uname))
+            cmd = '''UPDATE TimeSlot SET isAvailable = False WHERE TimeSlotID = (SELECT TimeSlotID FROM TimeSlot WHERE Date = ? AND StartTime = ? AND FK_RoomID = (SELECT RoomID FROM Room WHERE Name = ?));'''
+            cur.execute(cmd, (date, timeslot, room))
+            db.commit()
 
-        
+        except sq.Error as e:
+            print("Reservation failed:",e)
+            return reservation_pb2.MakeReservationResponse(
+                message="Timeslot is not available anymore.",
+                isSuccessful=False)
 
+        return reservation_pb2.MakeReservationResponse(
+            message="Successful reservation",
+            isSuccessful=True)
 
-        return reservation_pb2.MakeReservationResponse(message="Successful reservation", isSuccessful=True)
+    """
+        Method for fetching reservation existing reservation information
+            of a user.
 
+        Parameters:
+            Request (Request Object): Containing information sent by client
+            Context (Context Object): Additional configuration information
+        Returns:
+            Response (Response Object): Reservations as a ; and newline separated string.
+    """
 
     def ViewReservations(self, request, context):
         uname = request.username
@@ -381,7 +499,7 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
 
             resString = ""
 
-        ## We want to select specific columns from the query:
+            ## We want to select specific columns from the query:
             for res in reservations:
                 resString += f"{res[0]};"
                 resString += f"{res[2]};"
@@ -389,14 +507,29 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
                 resString += f"{res[5]};"
                 resString += f"{res[6]}\n"
 
-        ## Remove trailing newline
+            ## Remove trailing newline
             resString = resString.rstrip('\n')
+
+        except sq.Error as e:
+            print("Sqlite error during ViewReservations:",e)
+            return reservation_pb2.ViewReservationsResponse(
+                reservations="")
         except Exception as e:
             print("Error retrieving reservations:", e)
-            return reservation_pb2.ViewReservationsResponse(message="Error retrieving reservations")
+            return reservation_pb2.ViewReservationsResponse(
+                reservations="")
 
         return reservation_pb2.ViewReservationsResponse(reservations=resString)
 
+    """
+        Method for cancelling users existing reservation based on reservation id.
+
+        Parameters:
+            Request (Request Object): Containing information sent by client
+            Context (Context Object): Additional configuration information
+        Returns:
+            Response (Response Object): Message indicating success or failure
+    """
 
     def CancelReservation(self, request, context):
         try:
@@ -421,11 +554,13 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
 
         except IndexError:
             db.close()
-            return reservation_pb2.CancelReservationResponse(message="No reservation found.")
+            return reservation_pb2.CancelReservationResponse(
+                message="No reservation found.")
 
         except ValueError:
             db.close()
-            return reservation_pb2.CancelReservationResponse(message="No reservation found.")
+            return reservation_pb2.CancelReservationResponse(
+                message="No reservation found.")
 
         ## Verify that user has reservation match
         cmd = '''SELECT FK_TimeSlotID FROM Reservation WHERE FK_UserID = ? AND ReservationID = ?;'''
@@ -460,12 +595,19 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
             print("Update and delete error: ", e)
             db.rollback()
             db.close()
-            return reservation_pb2.CancelReservationResponse(message="No reservation found.")
+            return reservation_pb2.CancelReservationResponse(
+                message="No reservation found.")
 
         db.close()
-        return reservation_pb2.CancelReservationResponse(message="Successfully removed reservation")
+        return reservation_pb2.CancelReservationResponse(
+            message="Successfully removed reservation")
 
+"""
+    Server serve method which creates the server verification and SSL / TLS connection
+        to create an encrypted channel between connecting clients via CA certificates.
 
+    Opens server in localhost to port 44000.
+"""
 def serve():
     try:
         server = grpc.server(
@@ -491,12 +633,12 @@ def serve():
         server.wait_for_termination()
     except Exception as e:
         print("Error starting server:", e)
-    
 
+
+## Starts server when program file is loaded.
 if __name__=="__main__":
     if initDB():
         serve()
-
 
 
 # ################################################
