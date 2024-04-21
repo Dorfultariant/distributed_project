@@ -378,7 +378,6 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
         try:
             cur.execute(cmd)
             info = cur.fetchall()
-            print("Info: ", info)
             for room in info:
                 yield reservation_pb2.FetchRoomsResponse(rooms=room)
 
@@ -443,19 +442,35 @@ class ReservationServiceServicer(reservation_pb2_grpc.ReservationServiceServicer
 
         db, cur = initConnection()
         
-        # Construct the SQL insert query
+        try:
+            cmd = """SELECT TimeSlotID FROM TimeSlot WHERE isAvailable = True
+                    AND Date = ? AND StartTime = ? AND FK_RoomID = (SELECT RoomID FROM Room WHERE Name = ?);"""
+
+            cur.execute(cmd, (date, timeslot, room,))
+            TSSlotID = cur.fetchone()
+            if TSSlotID is None:
+                return reservation_pb2.MakeReservationResponse(
+                message="Timeslot is not available anymore.",
+                isSuccessful=False)
+
+        except sq.Error as e:
+            print("Sqlite error: ",e)
+            return reservation_pb2.MakeReservationResponse(
+                message="Timeslot is not available anymore.",
+                isSuccessful=False)
+
+            # Construct the SQL insert query
         cmd = """
             INSERT INTO Reservation (ReservationDate, FK_TimeSlotID, FK_RoomID, FK_UserID)
-            VALUES (?, 
-            (SELECT TimeSlotID FROM TimeSlot WHERE Date = ? AND StartTime = ? AND FK_RoomID = (SELECT RoomID FROM Room WHERE Name = ?)), 
+            VALUES (?, ?,
             (SELECT RoomID FROM Room WHERE Name = ?), 
             (SELECT UserID FROM Member WHERE Username = ?))
             """
         try:
             # Add to database the reservation + set timeslot to reserved
-            cur.execute(cmd, (date, date, timeslot, room, room, uname))
-            cmd = '''UPDATE TimeSlot SET isAvailable = False WHERE TimeSlotID = (SELECT TimeSlotID FROM TimeSlot WHERE Date = ? AND StartTime = ? AND FK_RoomID = (SELECT RoomID FROM Room WHERE Name = ?));'''
-            cur.execute(cmd, (date, timeslot, room))
+            cur.execute(cmd, (date, TSSlotID[0], room, uname))
+            cmd = '''UPDATE TimeSlot SET isAvailable = False WHERE TimeSlotID = ?;'''
+            cur.execute(cmd, (TSSlotID))
             db.commit()
 
         except sq.Error as e:
@@ -662,3 +677,4 @@ if __name__=="__main__":
 # openssl req -new -key server.key -out server.csr
 # openssl x509 -req -in server.csr -CA ca.pem -CAkey ca.key -CAcreateserial -out server.pem -days 500 -sha256
 #
+
