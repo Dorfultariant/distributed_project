@@ -4,13 +4,13 @@ package reservation;
 
 service ReservationService {
   rpc PingServer(PingServerRequest) returns (PingServerResponse) {}
+  rpc FetchRooms(FetchRoomsRequest) returns (stream FetchRoomsResponse) {}
+  rpc FetchAvailableSlots(FetchAvailableSlotsRequest) returns (stream FetchAvailableSlotsResponse) {}
 
   rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse) {}
   rpc Login(LoginRequest) returns (LoginResponse) {}
   rpc Logout(LogoutRequest) returns (LogoutResponse) {}
 
-  rpc FetchRooms(FetchRoomsRequest) returns (stream FetchRoomsResponse) {}
-  rpc FetchAvailableSlots(FetchAvailableSlotsRequest) returns (stream FetchAvailableSlotsResponse) {}
   rpc MakeReservation(MakeReservationRequest) returns (MakeReservationResponse) {}
 
   rpc ViewReservations(ViewReservationsRequest) returns (ViewReservationsResponse) {}
