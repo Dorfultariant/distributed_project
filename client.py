@@ -131,7 +131,6 @@ def fetchRooms(stub, username, token, metadata):
     rooms = []
     for res in responses:
         rooms.append(res.rooms)
-        print(res.rooms)
     return rooms
 
 
@@ -247,10 +246,7 @@ def reservationSystem(stub, username, token, metadata):
         for i, room in enumerate(rooms, 1):
             print(f"[{i}]: {room}")
 
-        print("Roomlist len: ", len(rooms))
         room_idx = getARoom(len(rooms))
-
-        print("Roomid : ", room_idx)
 
         if room_idx == None:
             continue
@@ -507,6 +503,8 @@ def run():
         response = None
 
         metadata = []
+
+        # A very important banner
         print_banner()
 
 

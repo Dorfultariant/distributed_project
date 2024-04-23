@@ -16,7 +16,8 @@ import os
 import sys
 
 
-## Connects username to their access token
+## Connects username to their access token,
+###  not strictly necessary as the interceptor class was implemented
 loggedUsers = {
 }
 
@@ -660,7 +661,7 @@ def serve():
 
 ## Starts server when program file is loaded.
 if __name__=="__main__":
-    ## Define server ip and port
+    ## Define server port
     if len(sys.argv) > 1:
         if len(sys.argv[1]) > 1:
             PORT = sys.argv[1]
