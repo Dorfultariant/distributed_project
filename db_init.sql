@@ -5,19 +5,11 @@ CREATE TABLE Member (
     PASSWORD CHAR(256) NOT NULL,
     SALT CHAR(256) NOT NULL
 );
--- Making a test-user
-INSERT INTO Member VALUES (1, 'Tester', 'test', '1234', 'SALT');
 
 CREATE TABLE Room (
     RoomID INTEGER PRIMARY KEY NOT NULL,
     Name CHAR(100) NOT NULL
 );
--- Inserting rooms here
-INSERT INTO Room (RoomID, Name)
-VALUES (1, 'Da Gaming Lounge'),
-       (2, 'Random example Room');
-
--- INSERT INTO Room VALUES (3, "IPH");
 
 CREATE TABLE TimeSlot (
     TimeSlotID INTEGER PRIMARY KEY NOT NULL,
@@ -27,6 +19,30 @@ CREATE TABLE TimeSlot (
     IsAvailable BOOLEAN NOT NULL DEFAULT TRUE,
     FOREIGN KEY (FK_RoomID) REFERENCES Room(RoomID) ON DELETE CASCADE
 );
+
+CREATE TABLE Reservation (
+    ReservationID INTEGER PRIMARY KEY NOT NULL,
+    ReservationDate DATE NOT NULL,
+    FK_TimeSlotID INT NOT NULL,
+    FK_RoomID INT NOT NULL,
+    FK_UserID INT NOT NULL,
+    FOREIGN KEY (FK_TimeSlotID) REFERENCES TimeSlot(TimeSlotID) ON DELETE CASCADE,
+    FOREIGN KEY (FK_RoomID) REFERENCES Room(RoomID) ON DELETE CASCADE,
+    FOREIGN KEY (FK_UserID) REFERENCES Member(UserID) ON DELETE CASCADE
+);
+
+
+
+-- INSERT OPERATIONS TO CREATE A DATABASE
+--
+
+
+-- Making a test-user
+INSERT INTO Member VALUES (1, 'Tester', 'test', '1234', 'SALT');
+
+-- Inserting rooms here
+INSERT INTO Room (RoomID, Name)
+VALUES (1, 'Da Gaming Lounge');
 
 -- Inserting Timeslots here, beginning with monday...
 INSERT INTO TimeSlot (TimeSlotID, FK_RoomID, Date, StartTime, IsAvailable)
@@ -38,6 +54,7 @@ VALUES (1, 1, '2024-04-15', '08:00:00', TRUE),
        (6, 1, '2024-04-15', '13:00:00', TRUE),
        (7, 1, '2024-04-15', '14:00:00', TRUE),
        (8, 1, '2024-04-15', '15:00:00', TRUE);
+
 -- Tuesday here... 
 INSERT INTO TimeSlot (TimeSlotID, FK_RoomID, Date, StartTime, IsAvailable)
 VALUES (9, 1, '2024-04-16', '08:00:00', TRUE),
@@ -59,6 +76,7 @@ VALUES (17, 1, '2024-04-17', '08:00:00', TRUE),
        (22, 1, '2024-04-17', '13:00:00', TRUE),
        (23, 1, '2024-04-17', '14:00:00', TRUE),
        (24, 1, '2024-04-17', '1username5:00:00', TRUE);
+
 -- Thursday here... 
 INSERT INTO TimeSlot (TimeSlotID, FK_RoomID, Date, StartTime, IsAvailable)
 VALUES (25, 1, '2024-04-18', '08:00:00', TRUE),
@@ -69,6 +87,7 @@ VALUES (25, 1, '2024-04-18', '08:00:00', TRUE),
        (30, 1, '2024-04-18', '13:00:00', TRUE),
        (31, 1, '2024-04-18', '14:00:00', TRUE),
        (32, 1, '2024-04-18', '15:00:00', TRUE);
+
 -- Friday here... 
 INSERT INTO TimeSlot (TimeSlotID, FK_RoomID, Date, StartTime, IsAvailable)
 VALUES (33, 1, '2024-04-19', '08:00:00', TRUE),
@@ -79,6 +98,7 @@ VALUES (33, 1, '2024-04-19', '08:00:00', TRUE),
        (38, 1, '2024-04-19', '13:00:00', TRUE),
        (39, 1, '2024-04-19', '14:00:00', TRUE),
        (40, 1, '2024-04-19', '15:00:00', TRUE);
+
 -- Saturday here... 
 INSERT INTO TimeSlot (TimeSlotID, FK_RoomID, Date, StartTime, IsAvailable)
 VALUES (41, 1, '2024-04-20', '08:00:00', TRUE),
@@ -89,6 +109,7 @@ VALUES (41, 1, '2024-04-20', '08:00:00', TRUE),
        (46, 1, '2024-04-20', '13:00:00', TRUE),
        (47, 1, '2024-04-20', '14:00:00', TRUE),
        (48, 1, '2024-04-20', '15:00:00', TRUE);
+
 -- Sunday here... 
 INSERT INTO TimeSlot (TimeSlotID, FK_RoomID, Date, StartTime, IsAvailable)
 VALUES (49, 1, '2024-04-21', '08:00:00', TRUE),
@@ -101,19 +122,10 @@ VALUES (49, 1, '2024-04-21', '08:00:00', TRUE),
        (56, 1, '2024-04-21', '15:00:00', TRUE);
 
 
-CREATE TABLE Reservation (
-    ReservationID INTEGER PRIMARY KEY NOT NULL,
-    ReservationDate DATE NOT NULL,
-    FK_TimeSlotID INT NOT NULL,
-    FK_RoomID INT NOT NULL,
-    FK_UserID INT NOT NULL,
-    FOREIGN KEY (FK_TimeSlotID) REFERENCES TimeSlot(TimeSlotID) ON DELETE CASCADE,
-    FOREIGN KEY (FK_RoomID) REFERENCES Room(RoomID) ON DELETE CASCADE,
-    FOREIGN KEY (FK_UserID) REFERENCES Member(UserID) ON DELETE CASCADE
-);
 
-INSERT INTO Reservation (ReservationID, ReservationDate, FK_TimeSlotID, FK_RoomID, FK_UserID)
-VALUES (1, '2024-04-16', 2, 1, 1),
+INSERT INTO Reservation
+    (ReservationID, ReservationDate, FK_TimeSlotID, FK_RoomID, FK_UserID)
+    VALUES (1, '2024-04-16', 2, 1, 1),
        (2, '2024-04-16', 4, 1, 1);
        
 CREATE VIEW FreeTimeSlots AS
