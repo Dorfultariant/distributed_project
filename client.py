@@ -127,7 +127,7 @@ def fetchRooms(stub, username, token, metadata):
         responses = stub.FetchRooms(reservation_pb2.FetchRoomsRequest(token=token), metadata=metadata)
     except grpc.RpcError:
         print("\nCould not fetch available rooms.\n")
-        return []
+        return None
     rooms = []
     for res in responses:
         rooms.append(res.rooms)
@@ -527,6 +527,8 @@ def run():
 
             ## Making reservation
             if (userInput == "1"):
+                if not pingServer(stub):
+                    exit(-1)
                 if reservationSystem(stub, userName, sessionToken, metadata):
                     print("Reservation Done")
 
