@@ -507,6 +507,8 @@ def run():
         response = None
 
         metadata = []
+
+        # A very important banner
         print_banner()
 
 
